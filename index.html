@@ -78,11 +78,11 @@
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-400">
                     <p class="text-xs text-gray-500 uppercase">Uova Settimana</p>
-                    <p class="text-2xl font-bold text-gray-800" id="dash-weekly-eggs">-</p>
+                    <p class="text-2xl font-bold text-gray-800" id="dash-weekly-eggs"><i class="fa-solid fa-spinner fa-spin text-sm"></i></p>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-orange-400">
                     <p class="text-xs text-gray-500 uppercase">Totale Anno</p>
-                    <p class="text-2xl font-bold text-gray-800" id="dash-yearly-eggs">-</p>
+                    <p class="text-2xl font-bold text-gray-800" id="dash-yearly-eggs"><i class="fa-solid fa-spinner fa-spin text-sm"></i></p>
                 </div>
             </div>
 
@@ -109,7 +109,7 @@
                 <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🏠</div>
                 <div>
                     <h2 class="text-xl font-bold" id="detail-coop-name">Nome Pollaio</h2>
-                    <p class="text-sm text-gray-500" id="detail-coop-members">0 Membri</p>
+                    <p class="text-sm text-gray-500" id="detail-coop-members">Caricamento...</p>
                 </div>
             </div>
 
@@ -129,12 +129,20 @@
             <!-- TAB: STATISTICHE -->
             <div id="content-stats" class="hidden space-y-6">
                 <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <h4 class="font-bold text-gray-700 mb-4">Produzione Uova</h4>
+                    <h4 class="font-bold text-gray-700 mb-2">Produzione Uova</h4>
                     
+                    <!-- Filtro Gallina -->
+                    <div class="mb-4">
+                        <select id="stats-filter-chicken" onchange="updateChartFromCache()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                            <option value="all">Tutto il Pollaio</option>
+                            <!-- Options popolate via JS -->
+                        </select>
+                    </div>
+
                     <div class="flex justify-center space-x-2 mb-4">
-                        <button onclick="updateChart('week')" class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 focus:ring ring-yellow-300">Settimana</button>
-                        <button onclick="updateChart('month')" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Mese</button>
-                        <button onclick="updateChart('year')" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Anno</button>
+                        <button onclick="setChartPeriod('week')" id="btn-period-week" class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 ring-2 ring-yellow-300 font-bold">Settimana</button>
+                        <button onclick="setChartPeriod('month')" id="btn-period-month" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Mese</button>
+                        <button onclick="setChartPeriod('year')" id="btn-period-year" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Anno</button>
                     </div>
 
                     <div class="relative h-64 w-full">
@@ -234,6 +242,22 @@
             </div>
         </div>
 
+        <!-- MODAL: MODIFICA POLLAIO -->
+        <div id="modal-edit-coop" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-xl p-6 shadow-2xl">
+                <h3 class="text-lg font-bold mb-4">Modifica Pollaio</h3>
+                <input type="hidden" id="edit-coop-id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">Nome</label>
+                    <input type="text" id="edit-coop-name" class="mt-1 w-full border rounded-lg p-2">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('modal-edit-coop').classList.add('hidden')" class="w-1/2 py-2 border border-gray-300 rounded text-gray-700">Annulla</button>
+                    <button onclick="saveCoopEdit()" class="w-1/2 py-2 bg-yellow-500 text-white rounded font-bold">Salva</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- FLOATING ACTION BUTTON (FAB) -->
@@ -247,15 +271,15 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, updateDoc, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE ---
+        // --- CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
-  apiKey: "AIzaSyDMEHRTExYPq1m2aV7xyPwFmSSt_u68Fls",
-  authDomain: "ovetto-7cbc4.firebaseapp.com",
-  projectId: "ovetto-7cbc4",
-  storageBucket: "ovetto-7cbc4.firebasestorage.app",
-  messagingSenderId: "6415082706",
-  appId: "1:6415082706:web:fc60be4a88cd5910d4f90b"
-};
+          apiKey: "AIzaSyDMEHRTExYPq1m2aV7xyPwFmSSt_u68Fls",
+          authDomain: "ovetto-7cbc4.firebaseapp.com",
+          projectId: "ovetto-7cbc4",
+          storageBucket: "ovetto-7cbc4.firebasestorage.app",
+          messagingSenderId: "6415082706",
+          appId: "1:6415082706:web:fc60be4a88cd5910d4f90b"
+        };
         // ----------------------------------------------------
 
         // Init Firebase
@@ -267,8 +291,10 @@
         // State Globali
         let currentUser = null;
         let currentCoopId = null;
-        let chickensCache = []; // Cache locale galline per il modale uova
+        let chickensCache = []; // Cache galline
+        let productionCache = []; // Cache uova (per stats)
         let chartInstance = null;
+        let currentChartPeriod = 'week';
 
         // Elementi DOM
         const views = {
@@ -333,8 +359,7 @@
             try {
                 await addDoc(collection(db, `users/${currentUser.uid}/coops`), {
                     name: name,
-                    createdAt: Timestamp.now(),
-                    memberCount: 0
+                    createdAt: Timestamp.now()
                 });
                 formCoop.reset();
                 showView('dashboard');
@@ -345,40 +370,101 @@
             const q = query(collection(db, `users/${currentUser.uid}/coops`), orderBy('createdAt', 'desc'));
             const listEl = document.getElementById('coops-list');
             
-            onSnapshot(q, (snapshot) => {
+            // Variabili per i totali globali
+            const dashWeekly = document.getElementById('dash-weekly-eggs');
+            const dashYearly = document.getElementById('dash-yearly-eggs');
+
+            onSnapshot(q, async (snapshot) => {
                 listEl.innerHTML = '';
                 if (snapshot.empty) {
                     document.getElementById('no-coops-msg').classList.remove('hidden');
+                    dashWeekly.innerText = "0";
+                    dashYearly.innerText = "0";
                     return;
                 }
                 document.getElementById('no-coops-msg').classList.add('hidden');
 
-                let totalEggsWeek = 0; // Placeholder per logica futura complessa
-                let totalEggsYear = 0;
+                let globalWeek = 0;
+                let globalYear = 0;
+                const now = new Date();
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(now.getDate() - 7);
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-                snapshot.forEach(docSnap => {
+                // Per ogni pollaio, dobbiamo caricare membri e uova per fare i calcoli
+                // NOTA: In un'app più grande questo si farebbe lato server o con contatori denormalizzati
+                for (const docSnap of snapshot.docs) {
                     const coop = docSnap.data();
+                    const coopId = docSnap.id;
+
+                    // Fetch asincrono dei conteggi
+                    const [chickensSnap, prodSnap] = await Promise.all([
+                        getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)),
+                        getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`))
+                    ]);
+
+                    const memberCount = chickensSnap.size;
+                    const logs = prodSnap.docs.map(d => d.data());
+
+                    // Calcoli Pollaio
+                    const eggsWeek = logs.filter(l => new Date(l.date) >= oneWeekAgo).length;
+                    const eggsYear = logs.filter(l => new Date(l.date) >= startOfYear).length;
+
+                    globalWeek += eggsWeek;
+                    globalYear += eggsYear;
+
                     const el = document.createElement('div');
                     el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:bg-gray-50 transition-colors cursor-pointer';
                     el.innerHTML = `
                         <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-lg bg-cover bg-center bg-gray-200" style="background-image: url('https://img.icons8.com/color/96/chicken-coop.png')"></div>
+                            <div class="w-16 h-16 rounded-lg bg-cover bg-center bg-gray-200 border border-gray-300" style="background-image: url('https://img.icons8.com/color/96/chicken-coop.png')"></div>
                             <div>
                                 <h3 class="font-bold text-lg">${coop.name}</h3>
-                                <p class="text-sm text-gray-500">${coop.memberCount || 0} Galline</p>
+                                <p class="text-sm text-gray-500">${memberCount} Galline</p>
+                                <div class="flex gap-2 text-xs mt-1 text-gray-400">
+                                    <span>7gg: <b>${eggsWeek}</b></span> • 
+                                    <span>Anno: <b>${eggsYear}</b></span>
+                                </div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-2">
-                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm">
+                             <button onclick="event.stopPropagation(); openEditCoop('${docSnap.id}', '${coop.name.replace(/'/g, "\\'")}')" class="bg-gray-100 text-gray-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-gray-200">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-yellow-200">
                                 <i class="fa-solid fa-egg"></i>
                             </button>
                         </div>
                     `;
                     el.onclick = () => openCoopDetail(docSnap.id, coop);
                     listEl.appendChild(el);
-                });
+                }
+                
+                // Aggiorna dashboard globale
+                dashWeekly.innerText = globalWeek;
+                dashYearly.innerText = globalYear;
             });
         }
+
+        // --- EDIT POLLAIO ---
+        window.openEditCoop = (id, currentName) => {
+            document.getElementById('edit-coop-id').value = id;
+            document.getElementById('edit-coop-name').value = currentName;
+            document.getElementById('modal-edit-coop').classList.remove('hidden');
+        };
+
+        window.saveCoopEdit = async () => {
+            const id = document.getElementById('edit-coop-id').value;
+            const newName = document.getElementById('edit-coop-name').value;
+            try {
+                await updateDoc(doc(db, `users/${currentUser.uid}/coops/${id}`), {
+                    name: newName
+                });
+                document.getElementById('modal-edit-coop').classList.add('hidden');
+                // loadCoops si aggiorna da solo col listener snapshot
+            } catch(e) { alert("Errore modifica"); }
+        };
+
 
         // --- DETTAGLIO POLLAIO E GALLINE ---
         window.openCoopDetail = (coopId, coopData) => {
@@ -386,9 +472,78 @@
             document.getElementById('detail-coop-name').innerText = coopData.name;
             document.getElementById('page-title').innerText = coopData.name;
             showView('coopDetail');
-            loadChickens(coopId);
-            switchCoopTab('members'); // Default tab
+            loadChickensAndStats(coopId);
+            switchCoopTab('members');
         };
+
+        // Unita funzione caricamento galline e statistiche per calcolare uova per gallina
+        async function loadChickensAndStats(coopId) {
+            const chickensListEl = document.getElementById('chickens-list');
+            const selectFilter = document.getElementById('stats-filter-chicken');
+            
+            // 1. Prendi Galline
+            const chkSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`));
+            chickensCache = chkSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+            // 2. Prendi Tutte le Uova (per calcoli)
+            const prodSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`));
+            productionCache = prodSnap.docs.map(d => d.data());
+
+            document.getElementById('detail-coop-members').innerText = `${chickensCache.length} Membri`;
+
+            // Popola Select Filtro Statistiche
+            selectFilter.innerHTML = '<option value="all">Tutto il Pollaio</option>';
+            chickensCache.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.innerText = c.name;
+                selectFilter.appendChild(opt);
+            });
+
+            // Render Lista Galline
+            chickensListEl.innerHTML = '';
+            const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+            chickensCache.forEach(c => {
+                // Calcolo età
+                const birth = new Date(c.birthDate);
+                const now = new Date();
+                const diffTime = Math.abs(now - birth);
+                const years = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
+                const months = Math.floor((diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+                const ageString = years > 0 ? `${years} Anni, ${months} Mesi` : `${months} Mesi`;
+
+                // Calcolo Uova Anno per questa gallina
+                const personalEggs = productionCache.filter(p => p.chickenId === c.id && new Date(p.date) >= startOfYear).length;
+
+                const el = document.createElement('div');
+                el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 relative overflow-hidden';
+                el.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
+                    <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
+                        🐔
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-lg">${c.name}</h4>
+                            <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">Anno: <b>${personalEggs}</b> 🥚</span>
+                        </div>
+                        <p class="text-sm text-gray-500">${c.breed} • ${ageString}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-xs flex items-center gap-1 ${c.isActive ? 'text-green-600' : 'text-red-500'}">
+                                <i class="fa-solid fa-circle text-[8px]"></i> ${c.isActive ? 'Attiva' : 'Riposo'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                chickensListEl.appendChild(el);
+            });
+
+            // Se siamo nel tab stats, aggiorna grafico
+            if(!document.getElementById('content-stats').classList.contains('hidden')) {
+                updateChartFromCache();
+            }
+        }
 
         const formChicken = document.getElementById('form-chicken');
         formChicken.addEventListener('submit', async (e) => {
@@ -407,78 +562,24 @@
 
             try {
                 await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
-                
-                // Aggiorna contatore pollaio
-                const coopRef = doc(db, `users/${currentUser.uid}/coops/${currentCoopId}`);
-                // Nota: In produzione usare increment(), qui semplifico lettura
                 formChicken.reset();
                 showView('coopDetail');
+                loadChickensAndStats(currentCoopId); // Ricarica lista
             } catch (err) { console.error(err); alert("Errore salvataggio gallina"); }
         });
-
-        function loadChickens(coopId) {
-            const q = query(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`));
-            const listEl = document.getElementById('chickens-list');
-            
-            onSnapshot(q, (snapshot) => {
-                listEl.innerHTML = '';
-                chickensCache = []; // Aggiorna cache
-                
-                snapshot.forEach(docSnap => {
-                    const c = docSnap.data();
-                    chickensCache.push({ id: docSnap.id, ...c }); // Salva per il modale uova
-                    
-                    // Calcolo età
-                    const birth = new Date(c.birthDate);
-                    const now = new Date();
-                    const diffTime = Math.abs(now - birth);
-                    const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30)); 
-                    const years = Math.floor(diffMonths / 12);
-                    const months = diffMonths % 12;
-                    const ageString = years > 0 ? `${years} Anni, ${months} Mesi` : `${months} Mesi`;
-
-                    const el = document.createElement('div');
-                    el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 relative overflow-hidden';
-                    el.innerHTML = `
-                        <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
-                        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
-                            🐔
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between items-start">
-                                <h4 class="font-bold text-lg">${c.name}</h4>
-                                <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded">${c.breed}</span>
-                            </div>
-                            <p class="text-sm text-gray-500">${ageString}</p>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="text-xs flex items-center gap-1 ${c.isActive ? 'text-green-600' : 'text-red-500'}">
-                                    <i class="fa-solid fa-circle text-[8px]"></i> ${c.isActive ? 'Attiva' : 'Riposo'}
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                    listEl.appendChild(el);
-                });
-                
-                // Aggiorna contatore UI
-                document.getElementById('detail-coop-members').innerText = `${snapshot.size} Membri`;
-            });
-        }
 
         // --- GESTIONE UOVA ---
         window.openEggModal = (coopId) => {
             currentCoopId = coopId;
-            // Carica galline se non siamo già nel dettaglio
-            if(chickensCache.length === 0 || coopId !== currentCoopId) {
-                // Fetch rapida se apro modale dalla dashboard (semplificazione)
-                getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)).then(snap => {
+            // Carichiamo galline se non le abbiamo in cache (es. aperto da dashboard)
+            if(chickensCache.length === 0) {
+                 getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)).then(snap => {
                     chickensCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     renderEggModalList();
                 });
             } else {
                 renderEggModalList();
             }
-            
             document.getElementById('input-egg-date').valueAsDate = new Date();
             toggleEggModal(true);
         };
@@ -488,12 +589,12 @@
             container.innerHTML = '';
             
             if(chickensCache.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 italic">Nessuna gallina in questo pollaio.</p>';
+                container.innerHTML = '<p class="text-center text-gray-400 italic">Nessuna gallina trovata.</p>';
                 return;
             }
 
             chickensCache.forEach(c => {
-                if(!c.isActive) return; // Mostra solo quelle attive
+                if(!c.isActive) return;
                 const div = document.createElement('div');
                 div.className = 'flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200';
                 div.innerHTML = `
@@ -524,24 +625,18 @@
             }
 
             try {
-                // Salviamo ogni uovo come record singolo per facilitare le statistiche
-                // In una app complessa useremmo "batch write"
-                const batch = []; 
-                // Simuliamo batch loop
                 for (const chkId of chickenIds) {
                     await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/production`), {
-                        date: dateVal, // YYYY-MM-DD
+                        date: dateVal,
                         chickenId: chkId,
                         timestamp: Timestamp.now()
                     });
                 }
-                
                 toggleEggModal(false);
                 alert(`Salvate ${chickenIds.length} uova!`);
-                // Se siamo nel tab stats, aggiorniamo
-                if(!document.getElementById('content-stats').classList.contains('hidden')) {
-                    loadStats(currentCoopId);
-                }
+                // Ricarichiamo dati per aggiornare contatori
+                if(currentCoopId) loadChickensAndStats(currentCoopId);
+                loadCoops(); // Aggiorna anche la dashboard
             } catch(e) { console.error(e); alert("Errore salvataggio"); }
         };
 
@@ -562,39 +657,52 @@
             activeTab.classList.add('bg-white', 'shadow');
 
             if(tabName === 'stats') {
-                loadStats(currentCoopId);
+                updateChartFromCache();
             }
         };
 
-        async function loadStats(coopId) {
-            // Recupera tutte le uova (in produzione si filtra lato server con where())
-            const q = query(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`));
-            const snapshot = await getDocs(q);
-            const logs = snapshot.docs.map(d => d.data());
-            
-            window.allLogs = logs; // salva in memoria per filtri rapidi
-            updateChart('week'); // default
-        }
+        window.setChartPeriod = (period) => {
+            currentChartPeriod = period;
+            // Aggiorna stili bottoni
+            ['week', 'month', 'year'].forEach(p => {
+                const btn = document.getElementById(`btn-period-${p}`);
+                if(p === period) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
+                } else {
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                    btn.classList.remove('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
+                }
+            });
+            updateChartFromCache();
+        };
 
-        window.updateChart = (period) => {
-            const logs = window.allLogs || [];
+        window.updateChartFromCache = () => {
+            if(!productionCache) return;
+
+            const selectedChicken = document.getElementById('stats-filter-chicken').value;
+            let logs = productionCache;
+            
+            // Filtro Gallina
+            if(selectedChicken !== 'all') {
+                logs = logs.filter(l => l.chickenId === selectedChicken);
+            }
+
             let labels = [];
             let data = [];
-            
             const now = new Date();
 
-            if (period === 'week') {
+            if (currentChartPeriod === 'week') {
                 // Ultimi 7 giorni
                 for(let i=6; i>=0; i--) {
                     const d = new Date();
                     d.setDate(now.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                    const dateStr = d.toISOString().split('T')[0];
                     labels.push(d.toLocaleDateString('it-IT', {weekday: 'short'}));
                     data.push(logs.filter(l => l.date === dateStr).length);
                 }
-            } else if (period === 'month') {
-                // Settimane del mese corrente (semplificato) o giorni
-                // Facciamo ultimi 15 gg per leggibilità mobile
+            } else if (currentChartPeriod === 'month') {
+                // Ultimi 15 giorni per leggibilità
                  for(let i=14; i>=0; i--) {
                     const d = new Date();
                     d.setDate(now.getDate() - i);
@@ -602,24 +710,23 @@
                     labels.push(d.getDate());
                     data.push(logs.filter(l => l.date === dateStr).length);
                 }
-            } else if (period === 'year') {
+            } else if (currentChartPeriod === 'year') {
                 // 12 Mesi
                 const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
                 labels = months;
                 data = new Array(12).fill(0);
                 logs.forEach(l => {
-                    const m = parseInt(l.date.split('-')[1]) - 1; // Mese 0-11
-                    // Filtra anno corrente
+                    const m = parseInt(l.date.split('-')[1]) - 1; 
                     if(l.date.startsWith(now.getFullYear())) {
                         data[m]++;
                     }
                 });
             }
 
-            renderChart(labels, data, period);
+            renderChart(labels, data);
         };
 
-        function renderChart(labels, data, period) {
+        function renderChart(labels, data) {
             const ctx = document.getElementById('eggsChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
@@ -632,7 +739,7 @@
                         data: data,
                         backgroundColor: '#f59e0b',
                         borderRadius: 4,
-                        barThickness: period === 'month' ? 10 : 20
+                        barThickness: currentChartPeriod === 'month' ? 10 : 20
                     }]
                 },
                 options: {
@@ -642,7 +749,8 @@
                     scales: {
                         y: { beginAtZero: true, ticks: { stepSize: 1 } },
                         x: { grid: { display: false } }
-                    }
+                    },
+                    animation: { duration: 500 }
                 }
             });
         }
