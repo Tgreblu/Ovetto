@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Il Mio Pollaio</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Tailwind CSS (Styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js (Grafici) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Font Awesome (Icone) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Stili personalizzati per PWA */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        /* Animazioni semplici */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Loader */
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- HEADER / NAV -->
+    <header class="bg-yellow-500 text-white shadow-md z-20 flex justify-between items-center p-4">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-egg text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wide" id="page-title">Il Mio Pollaio</h1>
+        </div>
+        <div id="user-info" class="hidden flex items-center gap-2">
+            <img id="user-avatar" src="" class="w-8 h-8 rounded-full border-2 border-white">
+            <button onclick="logout()" class="text-sm bg-yellow-600 px-2 py-1 rounded shadow"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="app-container" class="flex-1 overflow-y-auto p-4 safe-bottom relative">
+        
+        <!-- LOGIN VIEW -->
+        <section id="view-login" class="flex flex-col items-center justify-center h-full space-y-6">
+            <div class="text-center">
+                <div class="bg-white p-6 rounded-full shadow-lg inline-block mb-4">
+                    <i class="fa-solid fa-kiwi-bird text-6xl text-yellow-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-700">Gestione Pollaio</h2>
+                <p class="text-gray-500 mt-2">Accedi per gestire le tue galline</p>
+            </div>
+            <button onclick="loginWithGoogle()" class="bg-white text-gray-700 font-semibold py-3 px-6 rounded-lg shadow-md flex items-center gap-3 active:scale-95 transition-transform border border-gray-300">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
+                Accedi con Google
+            </button>
+        </section>
+
+        <!-- DASHBOARD (LISTA POLLAI) -->
+        <section id="view-dashboard" class="hidden fade-in space-y-4 pb-20">
+            <!-- Statistiche rapide globali -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-400">
+                    <p class="text-xs text-gray-500 uppercase">Uova Settimana</p>
+                    <p class="text-2xl font-bold text-gray-800" id="dash-weekly-eggs">-</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-orange-400">
+                    <p class="text-xs text-gray-500 uppercase">Totale Anno</p>
+                    <p class="text-2xl font-bold text-gray-800" id="dash-yearly-eggs">-</p>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-bold text-gray-700 ml-1">I tuoi Pollai</h3>
+            <div id="coops-list" class="space-y-4">
+                <!-- I pollai verranno inseriti qui via JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="no-coops-msg" class="hidden text-center py-10 text-gray-500">
+                <i class="fa-solid fa-house-chimney text-4xl mb-3 text-gray-300"></i>
+                <p>Nessun pollaio creato.</p>
+                <p class="text-sm">Tocca il + per iniziare.</p>
+            </div>
+        </section>
+
+        <!-- DETTAGLIO POLLAIO (LISTA GALLINE) -->
+        <section id="view-coop-detail" class="hidden fade-in space-y-4 pb-20">
+            <button onclick="goBack('view-dashboard')" class="text-yellow-600 font-semibold mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Torna ai Pollai
+            </button>
+            
+            <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4 mb-2">
+                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🏠</div>
+                <div>
+                    <h2 class="text-xl font-bold" id="detail-coop-name">Nome Pollaio</h2>
+                    <p class="text-sm text-gray-500" id="detail-coop-members">0 Membri</p>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex bg-gray-200 p-1 rounded-lg mb-4">
+                <button onclick="switchCoopTab('members')" id="tab-members" class="flex-1 py-2 text-sm font-medium rounded-md bg-white shadow text-gray-800 transition-all">Membri</button>
+                <button onclick="switchCoopTab('stats')" id="tab-stats" class="flex-1 py-2 text-sm font-medium rounded-md text-gray-500 transition-all">Statistiche</button>
+            </div>
+
+            <!-- TAB: MEMBRI -->
+            <div id="content-members" class="space-y-4">
+                <div id="chickens-list" class="grid grid-cols-1 gap-3">
+                    <!-- Galline JS -->
+                </div>
+            </div>
+
+            <!-- TAB: STATISTICHE -->
+            <div id="content-stats" class="hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h4 class="font-bold text-gray-700 mb-4">Produzione Uova</h4>
+                    
+                    <div class="flex justify-center space-x-2 mb-4">
+                        <button onclick="updateChart('week')" class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 focus:ring ring-yellow-300">Settimana</button>
+                        <button onclick="updateChart('month')" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Mese</button>
+                        <button onclick="updateChart('year')" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Anno</button>
+                    </div>
+
+                    <div class="relative h-64 w-full">
+                        <canvas id="eggsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FORM: CREA POLLAIO -->
+        <section id="view-add-coop" class="hidden fade-in bg-white h-full absolute inset-0 z-30 p-4">
+            <h2 class="text-xl font-bold mb-6">Nuovo Pollaio</h2>
+            <form id="form-coop" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nome Pollaio</label>
+                    <input type="text" id="input-coop-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Es. Pollaio Parabiago">
+                </div>
+                <div class="flex gap-2 mt-8">
+                    <button type="button" onclick="goBack('view-dashboard')" class="w-1/2 py-3 border border-gray-300 rounded-lg text-gray-700">Annulla</button>
+                    <button type="submit" class="w-1/2 py-3 bg-yellow-500 text-white rounded-lg font-bold shadow-md">Crea</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- FORM: AGGIUNGI GALLINA -->
+        <section id="view-add-chicken" class="hidden fade-in bg-white h-full absolute inset-0 z-30 p-4 overflow-y-auto">
+            <h2 class="text-xl font-bold mb-6">Nuova Gallina</h2>
+            <form id="form-chicken" class="space-y-4 pb-20">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nome</label>
+                    <input type="text" id="input-chk-name" required class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Rosita">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Razza/Specie</label>
+                        <input type="text" id="input-chk-breed" class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Livornese">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Colore Piumaggio</label>
+                        <input type="text" id="input-chk-color" class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Rossa">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Data di Nascita</label>
+                        <input type="date" id="input-chk-birth" required class="mt-1 w-full border rounded-lg p-3">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Colore Uova</label>
+                        <select id="input-chk-eggcolor" class="mt-1 w-full border rounded-lg p-3 bg-white">
+                            <option value="#fcd34d">Crema</option>
+                            <option value="#92400e">Marrone</option>
+                            <option value="#ffffff">Bianco</option>
+                            <option value="#a7f3d0">Verde/Blu</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3 border rounded-lg">
+                    <span class="text-gray-700">In deposizione attiva?</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="input-chk-active" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+
+                <div class="flex gap-2 mt-8">
+                    <button type="button" onclick="goBack('view-coop-detail')" class="w-1/2 py-3 border border-gray-300 rounded-lg text-gray-700">Annulla</button>
+                    <button type="submit" class="w-1/2 py-3 bg-yellow-500 text-white rounded-lg font-bold shadow-md">Salva Gallina</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- MODAL: REGISTRA UOVA -->
+        <div id="modal-add-eggs" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center">
+            <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl transform transition-transform duration-300">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold">Registra Uova</h3>
+                    <button onclick="toggleEggModal(false)" class="text-gray-400 text-xl">&times;</button>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Data Raccolta</label>
+                    <input type="date" id="input-egg-date" class="w-full border-b-2 border-yellow-400 bg-gray-50 py-2 px-1 focus:outline-none font-semibold">
+                </div>
+
+                <p class="text-sm text-gray-600 mb-3">Chi ha fatto l'uovo oggi?</p>
+                <div id="egg-checklist" class="space-y-2 max-h-60 overflow-y-auto mb-6">
+                    <!-- Checkbox galline generate via JS -->
+                </div>
+
+                <button onclick="saveDailyEggs()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow-md">
+                    Salva Raccolto
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FLOATING ACTION BUTTON (FAB) -->
+    <button id="fab-main" onclick="handleFabClick()" class="hidden fixed bottom-6 right-6 bg-yellow-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl z-40 active:scale-90 transition-transform">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- FIREBASE SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, updateDoc, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // --- INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE ---
+        const firebaseConfig = {
+  apiKey: "AIzaSyDMEHRTExYPq1m2aV7xyPwFmSSt_u68Fls",
+  authDomain: "ovetto-7cbc4.firebaseapp.com",
+  projectId: "ovetto-7cbc4",
+  storageBucket: "ovetto-7cbc4.firebasestorage.app",
+  messagingSenderId: "6415082706",
+  appId: "1:6415082706:web:fc60be4a88cd5910d4f90b"
+};
+        // ----------------------------------------------------
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // State Globali
+        let currentUser = null;
+        let currentCoopId = null;
+        let chickensCache = []; // Cache locale galline per il modale uova
+        let chartInstance = null;
+
+        // Elementi DOM
+        const views = {
+            login: document.getElementById('view-login'),
+            dashboard: document.getElementById('view-dashboard'),
+            coopDetail: document.getElementById('view-coop-detail'),
+            addCoop: document.getElementById('view-add-coop'),
+            addChicken: document.getElementById('view-add-chicken')
+        };
+        const fab = document.getElementById('fab-main');
+
+        // --- AUTHENTICATION ---
+        window.loginWithGoogle = () => {
+            signInWithPopup(auth, provider).catch((error) => alert("Errore login: " + error.message));
+        };
+
+        window.logout = () => {
+            signOut(auth);
+            window.location.reload();
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-avatar').src = user.photoURL;
+                showView('dashboard');
+                loadCoops();
+            } else {
+                document.getElementById('user-info').classList.add('hidden');
+                showView('login');
+            }
+        });
+
+        // --- NAVIGAZIONE ---
+        window.showView = (viewName) => {
+            Object.values(views).forEach(el => el.classList.add('hidden'));
+            views[viewName].classList.remove('hidden');
+            
+            // Gestione FAB
+            if(viewName === 'dashboard') {
+                fab.classList.remove('hidden');
+                fab.onclick = () => showView('addCoop');
+            } else if (viewName === 'coopDetail') {
+                fab.classList.remove('hidden');
+                fab.onclick = () => showView('addChicken');
+            } else {
+                fab.classList.add('hidden');
+            }
+        };
+
+        window.goBack = (targetView) => {
+            if(targetView === 'view-dashboard') currentCoopId = null;
+            showView(targetView.replace('view-', ''));
+        };
+
+        // --- GESTIONE POLLAI ---
+        const formCoop = document.getElementById('form-coop');
+        formCoop.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('input-coop-name').value;
+            try {
+                await addDoc(collection(db, `users/${currentUser.uid}/coops`), {
+                    name: name,
+                    createdAt: Timestamp.now(),
+                    memberCount: 0
+                });
+                formCoop.reset();
+                showView('dashboard');
+            } catch (err) { alert("Errore creazione pollaio"); }
+        });
+
+        function loadCoops() {
+            const q = query(collection(db, `users/${currentUser.uid}/coops`), orderBy('createdAt', 'desc'));
+            const listEl = document.getElementById('coops-list');
+            
+            onSnapshot(q, (snapshot) => {
+                listEl.innerHTML = '';
+                if (snapshot.empty) {
+                    document.getElementById('no-coops-msg').classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('no-coops-msg').classList.add('hidden');
+
+                let totalEggsWeek = 0; // Placeholder per logica futura complessa
+                let totalEggsYear = 0;
+
+                snapshot.forEach(docSnap => {
+                    const coop = docSnap.data();
+                    const el = document.createElement('div');
+                    el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:bg-gray-50 transition-colors cursor-pointer';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-lg bg-cover bg-center bg-gray-200" style="background-image: url('https://img.icons8.com/color/96/chicken-coop.png')"></div>
+                            <div>
+                                <h3 class="font-bold text-lg">${coop.name}</h3>
+                                <p class="text-sm text-gray-500">${coop.memberCount || 0} Galline</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-egg"></i>
+                            </button>
+                        </div>
+                    `;
+                    el.onclick = () => openCoopDetail(docSnap.id, coop);
+                    listEl.appendChild(el);
+                });
+            });
+        }
+
+        // --- DETTAGLIO POLLAIO E GALLINE ---
+        window.openCoopDetail = (coopId, coopData) => {
+            currentCoopId = coopId;
+            document.getElementById('detail-coop-name').innerText = coopData.name;
+            document.getElementById('page-title').innerText = coopData.name;
+            showView('coopDetail');
+            loadChickens(coopId);
+            switchCoopTab('members'); // Default tab
+        };
+
+        const formChicken = document.getElementById('form-chicken');
+        formChicken.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentCoopId) return;
+
+            const chickenData = {
+                name: document.getElementById('input-chk-name').value,
+                breed: document.getElementById('input-chk-breed').value,
+                color: document.getElementById('input-chk-color').value,
+                birthDate: document.getElementById('input-chk-birth').value,
+                eggColor: document.getElementById('input-chk-eggcolor').value,
+                isActive: document.getElementById('input-chk-active').checked,
+                createdAt: Timestamp.now()
+            };
+
+            try {
+                await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
+                
+                // Aggiorna contatore pollaio
+                const coopRef = doc(db, `users/${currentUser.uid}/coops/${currentCoopId}`);
+                // Nota: In produzione usare increment(), qui semplifico lettura
+                formChicken.reset();
+                showView('coopDetail');
+            } catch (err) { console.error(err); alert("Errore salvataggio gallina"); }
+        });
+
+        function loadChickens(coopId) {
+            const q = query(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`));
+            const listEl = document.getElementById('chickens-list');
+            
+            onSnapshot(q, (snapshot) => {
+                listEl.innerHTML = '';
+                chickensCache = []; // Aggiorna cache
+                
+                snapshot.forEach(docSnap => {
+                    const c = docSnap.data();
+                    chickensCache.push({ id: docSnap.id, ...c }); // Salva per il modale uova
+                    
+                    // Calcolo età
+                    const birth = new Date(c.birthDate);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - birth);
+                    const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30)); 
+                    const years = Math.floor(diffMonths / 12);
+                    const months = diffMonths % 12;
+                    const ageString = years > 0 ? `${years} Anni, ${months} Mesi` : `${months} Mesi`;
+
+                    const el = document.createElement('div');
+                    el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 relative overflow-hidden';
+                    el.innerHTML = `
+                        <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
+                        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
+                            🐔
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-lg">${c.name}</h4>
+                                <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded">${c.breed}</span>
+                            </div>
+                            <p class="text-sm text-gray-500">${ageString}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs flex items-center gap-1 ${c.isActive ? 'text-green-600' : 'text-red-500'}">
+                                    <i class="fa-solid fa-circle text-[8px]"></i> ${c.isActive ? 'Attiva' : 'Riposo'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    listEl.appendChild(el);
+                });
+                
+                // Aggiorna contatore UI
+                document.getElementById('detail-coop-members').innerText = `${snapshot.size} Membri`;
+            });
+        }
+
+        // --- GESTIONE UOVA ---
+        window.openEggModal = (coopId) => {
+            currentCoopId = coopId;
+            // Carica galline se non siamo già nel dettaglio
+            if(chickensCache.length === 0 || coopId !== currentCoopId) {
+                // Fetch rapida se apro modale dalla dashboard (semplificazione)
+                getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)).then(snap => {
+                    chickensCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    renderEggModalList();
+                });
+            } else {
+                renderEggModalList();
+            }
+            
+            document.getElementById('input-egg-date').valueAsDate = new Date();
+            toggleEggModal(true);
+        };
+
+        function renderEggModalList() {
+            const container = document.getElementById('egg-checklist');
+            container.innerHTML = '';
+            
+            if(chickensCache.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 italic">Nessuna gallina in questo pollaio.</p>';
+                return;
+            }
+
+            chickensCache.forEach(c => {
+                if(!c.isActive) return; // Mostra solo quelle attive
+                const div = document.createElement('div');
+                div.className = 'flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200';
+                div.innerHTML = `
+                    <input type="checkbox" id="egg-check-${c.id}" value="${c.id}" class="w-5 h-5 text-yellow-500 rounded focus:ring-yellow-500 border-gray-300">
+                    <label for="egg-check-${c.id}" class="ml-3 block text-sm font-medium text-gray-700 w-full cursor-pointer flex justify-between">
+                        ${c.name}
+                        <span class="w-3 h-3 rounded-full border border-gray-300 shadow-sm" style="background-color: ${c.eggColor}"></span>
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.toggleEggModal = (show) => {
+            const m = document.getElementById('modal-add-eggs');
+            if(show) m.classList.remove('hidden');
+            else m.classList.add('hidden');
+        };
+
+        window.saveDailyEggs = async () => {
+            const dateVal = document.getElementById('input-egg-date').value;
+            const checks = document.querySelectorAll('input[id^="egg-check-"]:checked');
+            const chickenIds = Array.from(checks).map(c => c.value);
+
+            if(chickenIds.length === 0) {
+                alert("Seleziona almeno una gallina!");
+                return;
+            }
+
+            try {
+                // Salviamo ogni uovo come record singolo per facilitare le statistiche
+                // In una app complessa useremmo "batch write"
+                const batch = []; 
+                // Simuliamo batch loop
+                for (const chkId of chickenIds) {
+                    await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/production`), {
+                        date: dateVal, // YYYY-MM-DD
+                        chickenId: chkId,
+                        timestamp: Timestamp.now()
+                    });
+                }
+                
+                toggleEggModal(false);
+                alert(`Salvate ${chickenIds.length} uova!`);
+                // Se siamo nel tab stats, aggiorniamo
+                if(!document.getElementById('content-stats').classList.contains('hidden')) {
+                    loadStats(currentCoopId);
+                }
+            } catch(e) { console.error(e); alert("Errore salvataggio"); }
+        };
+
+        // --- STATISTICHE ---
+        window.switchCoopTab = (tabName) => {
+            const tabs = ['members', 'stats'];
+            tabs.forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.replace('text-gray-800', 'text-gray-500');
+                document.getElementById(`tab-${t}`).classList.replace('bg-white', 'transparent');
+                document.getElementById(`tab-${t}`).classList.remove('shadow');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            activeTab.classList.replace('text-gray-500', 'text-gray-800');
+            activeTab.classList.remove('transparent');
+            activeTab.classList.add('bg-white', 'shadow');
+
+            if(tabName === 'stats') {
+                loadStats(currentCoopId);
+            }
+        };
+
+        async function loadStats(coopId) {
+            // Recupera tutte le uova (in produzione si filtra lato server con where())
+            const q = query(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`));
+            const snapshot = await getDocs(q);
+            const logs = snapshot.docs.map(d => d.data());
+            
+            window.allLogs = logs; // salva in memoria per filtri rapidi
+            updateChart('week'); // default
+        }
+
+        window.updateChart = (period) => {
+            const logs = window.allLogs || [];
+            let labels = [];
+            let data = [];
+            
+            const now = new Date();
+
+            if (period === 'week') {
+                // Ultimi 7 giorni
+                for(let i=6; i>=0; i--) {
+                    const d = new Date();
+                    d.setDate(now.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                    labels.push(d.toLocaleDateString('it-IT', {weekday: 'short'}));
+                    data.push(logs.filter(l => l.date === dateStr).length);
+                }
+            } else if (period === 'month') {
+                // Settimane del mese corrente (semplificato) o giorni
+                // Facciamo ultimi 15 gg per leggibilità mobile
+                 for(let i=14; i>=0; i--) {
+                    const d = new Date();
+                    d.setDate(now.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    labels.push(d.getDate());
+                    data.push(logs.filter(l => l.date === dateStr).length);
+                }
+            } else if (period === 'year') {
+                // 12 Mesi
+                const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                labels = months;
+                data = new Array(12).fill(0);
+                logs.forEach(l => {
+                    const m = parseInt(l.date.split('-')[1]) - 1; // Mese 0-11
+                    // Filtra anno corrente
+                    if(l.date.startsWith(now.getFullYear())) {
+                        data[m]++;
+                    }
+                });
+            }
+
+            renderChart(labels, data, period);
+        };
+
+        function renderChart(labels, data, period) {
+            const ctx = document.getElementById('eggsChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Uova',
+                        data: data,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4,
+                        barThickness: period === 'month' ? 10 : 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
