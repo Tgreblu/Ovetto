@@ -38,6 +38,13 @@
         /* Loader */
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Readonly inputs style override */
+        input:disabled, select:disabled {
+            background-color: #f9fafb;
+            color: #4b5563;
+            border-color: #e5e7eb;
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
@@ -167,53 +174,70 @@
             </form>
         </section>
 
-        <!-- FORM: AGGIUNGI GALLINA -->
+        <!-- FORM: GESTIONE GALLINA (UNIFICATO) -->
         <section id="view-add-chicken" class="hidden fade-in bg-white h-full absolute inset-0 z-30 p-4 overflow-y-auto">
-            <h2 class="text-xl font-bold mb-6">Nuova Gallina</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold" id="chicken-form-title">Nuova Gallina</h2>
+                <button type="button" id="btn-delete-chicken" onclick="deleteCurrentChicken()" class="hidden text-red-500 p-2 hover:bg-red-50 rounded-full">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            
             <form id="form-chicken" class="space-y-4 pb-20">
+                <!-- ID Nascosto (vuoto se nuova, valorizzato se modifica) -->
+                <input type="hidden" id="input-chk-id">
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nome</label>
-                    <input type="text" id="input-chk-name" required class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Rosita">
+                    <input type="text" id="input-chk-name" required class="mt-1 w-full border rounded-lg p-3 disabled:opacity-75" placeholder="Es. Rosita">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Razza/Specie</label>
-                        <input type="text" id="input-chk-breed" class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Livornese">
+                        <input type="text" id="input-chk-breed" class="mt-1 w-full border rounded-lg p-3 disabled:opacity-75" placeholder="Es. Livornese">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Colore Piumaggio</label>
-                        <input type="text" id="input-chk-color" class="mt-1 w-full border rounded-lg p-3" placeholder="Es. Rossa">
+                        <label class="block text-sm font-medium text-gray-700">Sesso</label>
+                        <select id="input-chk-sex" class="mt-1 w-full border rounded-lg p-3 bg-white disabled:opacity-75">
+                            <option value="F">Femmina</option>
+                            <option value="M">Maschio</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Data di Nascita</label>
-                        <input type="date" id="input-chk-birth" required class="mt-1 w-full border rounded-lg p-3">
+                        <label class="block text-sm font-medium text-gray-700">Colore Piumaggio</label>
+                        <input type="text" id="input-chk-color" class="mt-1 w-full border rounded-lg p-3 disabled:opacity-75" placeholder="Es. Rossa">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Colore Uova</label>
-                        <select id="input-chk-eggcolor" class="mt-1 w-full border rounded-lg p-3 bg-white">
-                            <option value="#fcd34d">Crema</option>
-                            <option value="#92400e">Marrone</option>
-                            <option value="#ffffff">Bianco</option>
-                            <option value="#a7f3d0">Verde/Blu</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700">Data di Nascita</label>
+                        <input type="date" id="input-chk-birth" required class="mt-1 w-full border rounded-lg p-3 disabled:opacity-75">
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Colore Uova</label>
+                    <select id="input-chk-eggcolor" class="mt-1 w-full border rounded-lg p-3 bg-white disabled:opacity-75">
+                        <option value="#fcd34d">Crema</option>
+                        <option value="#92400e">Marrone</option>
+                        <option value="#ffffff">Bianco</option>
+                        <option value="#a7f3d0">Verde/Blu</option>
+                    </select>
                 </div>
 
                 <div class="flex items-center justify-between p-3 border rounded-lg">
                     <span class="text-gray-700">In deposizione attiva?</span>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="input-chk-active" checked class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        <input type="checkbox" id="input-chk-active" checked class="sr-only peer" disabled> <!-- Disabled logic handled via JS -->
+                        <div id="toggle-bg" class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                     </label>
                 </div>
 
                 <div class="flex gap-2 mt-8">
-                    <button type="button" onclick="goBack('view-coop-detail')" class="w-1/2 py-3 border border-gray-300 rounded-lg text-gray-700">Annulla</button>
-                    <button type="submit" class="w-1/2 py-3 bg-yellow-500 text-white rounded-lg font-bold shadow-md">Salva Gallina</button>
+                    <button type="button" onclick="goBack('view-coop-detail')" class="w-1/2 py-3 border border-gray-300 rounded-lg text-gray-700">Indietro</button>
+                    <button type="submit" id="btn-save-chicken" class="w-1/2 py-3 bg-yellow-500 text-white rounded-lg font-bold shadow-md">Salva</button>
                 </div>
             </form>
         </section>
@@ -340,7 +364,8 @@
                 fab.onclick = () => showView('addCoop');
             } else if (viewName === 'coopDetail') {
                 fab.classList.remove('hidden');
-                fab.onclick = () => showView('addChicken');
+                // Il FAB apre il form in modalità 'create'
+                fab.onclick = () => openChickenForm('create');
             } else {
                 fab.classList.add('hidden');
             }
@@ -370,7 +395,6 @@
             const q = query(collection(db, `users/${currentUser.uid}/coops`), orderBy('createdAt', 'desc'));
             const listEl = document.getElementById('coops-list');
             
-            // Variabili per i totali globali
             const dashWeekly = document.getElementById('dash-weekly-eggs');
             const dashYearly = document.getElementById('dash-yearly-eggs');
 
@@ -391,13 +415,10 @@
                 oneWeekAgo.setDate(now.getDate() - 7);
                 const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-                // Per ogni pollaio, dobbiamo caricare membri e uova per fare i calcoli
-                // NOTA: In un'app più grande questo si farebbe lato server o con contatori denormalizzati
                 for (const docSnap of snapshot.docs) {
                     const coop = docSnap.data();
                     const coopId = docSnap.id;
 
-                    // Fetch asincrono dei conteggi
                     const [chickensSnap, prodSnap] = await Promise.all([
                         getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)),
                         getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`))
@@ -406,7 +427,6 @@
                     const memberCount = chickensSnap.size;
                     const logs = prodSnap.docs.map(d => d.data());
 
-                    // Calcoli Pollaio
                     const eggsWeek = logs.filter(l => new Date(l.date) >= oneWeekAgo).length;
                     const eggsYear = logs.filter(l => new Date(l.date) >= startOfYear).length;
 
@@ -440,13 +460,11 @@
                     listEl.appendChild(el);
                 }
                 
-                // Aggiorna dashboard globale
                 dashWeekly.innerText = globalWeek;
                 dashYearly.innerText = globalYear;
             });
         }
 
-        // --- EDIT POLLAIO ---
         window.openEditCoop = (id, currentName) => {
             document.getElementById('edit-coop-id').value = id;
             document.getElementById('edit-coop-name').value = currentName;
@@ -461,12 +479,9 @@
                     name: newName
                 });
                 document.getElementById('modal-edit-coop').classList.add('hidden');
-                // loadCoops si aggiorna da solo col listener snapshot
             } catch(e) { alert("Errore modifica"); }
         };
 
-
-        // --- DETTAGLIO POLLAIO E GALLINE ---
         window.openCoopDetail = (coopId, coopData) => {
             currentCoopId = coopId;
             document.getElementById('detail-coop-name').innerText = coopData.name;
@@ -476,22 +491,18 @@
             switchCoopTab('members');
         };
 
-        // Unita funzione caricamento galline e statistiche per calcolare uova per gallina
         async function loadChickensAndStats(coopId) {
             const chickensListEl = document.getElementById('chickens-list');
             const selectFilter = document.getElementById('stats-filter-chicken');
             
-            // 1. Prendi Galline
             const chkSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`));
             chickensCache = chkSnap.docs.map(d => ({id: d.id, ...d.data()}));
 
-            // 2. Prendi Tutte le Uova (per calcoli)
             const prodSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`));
             productionCache = prodSnap.docs.map(d => d.data());
 
             document.getElementById('detail-coop-members').innerText = `${chickensCache.length} Membri`;
 
-            // Popola Select Filtro Statistiche
             selectFilter.innerHTML = '<option value="all">Tutto il Pollaio</option>';
             chickensCache.forEach(c => {
                 const opt = document.createElement('option');
@@ -500,12 +511,10 @@
                 selectFilter.appendChild(opt);
             });
 
-            // Render Lista Galline
             chickensListEl.innerHTML = '';
             const startOfYear = new Date(new Date().getFullYear(), 0, 1);
 
             chickensCache.forEach(c => {
-                // Calcolo età
                 const birth = new Date(c.birthDate);
                 const now = new Date();
                 const diffTime = Math.abs(now - birth);
@@ -513,36 +522,102 @@
                 const months = Math.floor((diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
                 const ageString = years > 0 ? `${years} Anni, ${months} Mesi` : `${months} Mesi`;
 
-                // Calcolo Uova Anno per questa gallina
                 const personalEggs = productionCache.filter(p => p.chickenId === c.id && new Date(p.date) >= startOfYear).length;
 
+                // Stringify per passare l'oggetto al click
+                const cString = encodeURIComponent(JSON.stringify(c));
+
                 const el = document.createElement('div');
-                el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 relative overflow-hidden';
+                el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group active:bg-gray-50 cursor-pointer';
                 el.innerHTML = `
-                    <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
-                    <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
-                        🐔
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-lg">${c.name}</h4>
-                            <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">Anno: <b>${personalEggs}</b> 🥚</span>
+                    <div onclick="openChickenForm('view', JSON.parse(decodeURIComponent('${cString}')))" class="flex items-center gap-3">
+                        <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
+                        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
+                            🐔
                         </div>
-                        <p class="text-sm text-gray-500">${c.breed} • ${ageString}</p>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs flex items-center gap-1 ${c.isActive ? 'text-green-600' : 'text-red-500'}">
-                                <i class="fa-solid fa-circle text-[8px]"></i> ${c.isActive ? 'Attiva' : 'Riposo'}
-                            </span>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-lg">${c.name}</h4>
+                                <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">Anno: <b>${personalEggs}</b> 🥚</span>
+                            </div>
+                            <p class="text-sm text-gray-500">${c.breed} • ${ageString}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs flex items-center gap-1 ${c.isActive ? 'text-green-600' : 'text-red-500'}">
+                                    <i class="fa-solid fa-circle text-[8px]"></i> ${c.isActive ? 'Attiva' : 'Riposo'}
+                                </span>
+                            </div>
                         </div>
                     </div>
+                    <!-- Matita Modifica -->
+                    <button onclick="event.stopPropagation(); openChickenForm('edit', JSON.parse(decodeURIComponent('${cString}')))" class="absolute top-2 right-2 bg-white text-yellow-600 p-2 rounded-full shadow-sm border border-gray-100 hover:bg-yellow-50 z-10">
+                        <i class="fa-solid fa-pen text-sm"></i>
+                    </button>
                 `;
                 chickensListEl.appendChild(el);
             });
 
-            // Se siamo nel tab stats, aggiorna grafico
             if(!document.getElementById('content-stats').classList.contains('hidden')) {
                 updateChartFromCache();
             }
+        }
+
+        // --- GESTIONE FORM UNIFICATO (CREATE / EDIT / VIEW) ---
+        window.openChickenForm = (mode, data = null) => {
+            showView('addChicken');
+            const form = document.getElementById('form-chicken');
+            const title = document.getElementById('chicken-form-title');
+            const btnSave = document.getElementById('btn-save-chicken');
+            const btnDelete = document.getElementById('btn-delete-chicken');
+            const inputs = form.querySelectorAll('input, select');
+            const chkActive = document.getElementById('input-chk-active');
+
+            // Reset Form
+            form.reset();
+            document.getElementById('input-chk-id').value = '';
+            
+            // Abilita/Disabilita Inputs
+            const isReadOnly = (mode === 'view');
+            inputs.forEach(i => i.disabled = isReadOnly);
+            // Il checkbox custom richiede logica separata per UI? No, disabled su input basta.
+
+            if (mode === 'create') {
+                title.innerText = "Nuova Gallina";
+                btnSave.classList.remove('hidden');
+                btnDelete.classList.add('hidden');
+                chkActive.checked = true; // Default attiva
+            } else {
+                // Edit o View: Popola dati
+                document.getElementById('input-chk-id').value = data.id;
+                document.getElementById('input-chk-name').value = data.name;
+                document.getElementById('input-chk-breed').value = data.breed || '';
+                document.getElementById('input-chk-color').value = data.color || '';
+                document.getElementById('input-chk-sex').value = data.sex || 'F';
+                document.getElementById('input-chk-birth').value = data.birthDate;
+                document.getElementById('input-chk-eggcolor').value = data.eggColor;
+                chkActive.checked = data.isActive;
+
+                if (mode === 'edit') {
+                    title.innerText = "Modifica Gallina";
+                    btnSave.classList.remove('hidden');
+                    btnDelete.classList.remove('hidden');
+                } else {
+                    title.innerText = "Dettagli Gallina";
+                    btnSave.classList.add('hidden'); // Nascondi bottone salva
+                    btnDelete.classList.add('hidden');
+                }
+            }
+        };
+
+        window.deleteCurrentChicken = async () => {
+            if(!confirm("Sei sicuro di voler rimuovere questa gallina?")) return;
+            const id = document.getElementById('input-chk-id').value;
+            if(!id) return;
+
+            try {
+                await deleteDoc(doc(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens/${id}`));
+                showView('coopDetail');
+                loadChickensAndStats(currentCoopId);
+            } catch(e) { alert("Errore eliminazione"); }
         }
 
         const formChicken = document.getElementById('form-chicken');
@@ -550,28 +625,39 @@
             e.preventDefault();
             if(!currentCoopId) return;
 
+            const chkId = document.getElementById('input-chk-id').value;
+            
             const chickenData = {
                 name: document.getElementById('input-chk-name').value,
                 breed: document.getElementById('input-chk-breed').value,
                 color: document.getElementById('input-chk-color').value,
+                sex: document.getElementById('input-chk-sex').value,
                 birthDate: document.getElementById('input-chk-birth').value,
                 eggColor: document.getElementById('input-chk-eggcolor').value,
                 isActive: document.getElementById('input-chk-active').checked,
-                createdAt: Timestamp.now()
+                // Se è un update, non tocchiamo createdAt, se è nuovo lo aggiungiamo
+                updatedAt: Timestamp.now()
             };
 
             try {
-                await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
+                if(chkId) {
+                    // UPDATE
+                    await updateDoc(doc(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens/${chkId}`), chickenData);
+                } else {
+                    // CREATE
+                    chickenData.createdAt = Timestamp.now();
+                    await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
+                }
+                
                 formChicken.reset();
                 showView('coopDetail');
-                loadChickensAndStats(currentCoopId); // Ricarica lista
+                loadChickensAndStats(currentCoopId);
             } catch (err) { console.error(err); alert("Errore salvataggio gallina"); }
         });
 
         // --- GESTIONE UOVA ---
         window.openEggModal = (coopId) => {
             currentCoopId = coopId;
-            // Carichiamo galline se non le abbiamo in cache (es. aperto da dashboard)
             if(chickensCache.length === 0) {
                  getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)).then(snap => {
                     chickensCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -634,9 +720,8 @@
                 }
                 toggleEggModal(false);
                 alert(`Salvate ${chickenIds.length} uova!`);
-                // Ricarichiamo dati per aggiornare contatori
                 if(currentCoopId) loadChickensAndStats(currentCoopId);
-                loadCoops(); // Aggiorna anche la dashboard
+                loadCoops(); 
             } catch(e) { console.error(e); alert("Errore salvataggio"); }
         };
 
@@ -663,7 +748,6 @@
 
         window.setChartPeriod = (period) => {
             currentChartPeriod = period;
-            // Aggiorna stili bottoni
             ['week', 'month', 'year'].forEach(p => {
                 const btn = document.getElementById(`btn-period-${p}`);
                 if(p === period) {
@@ -683,7 +767,6 @@
             const selectedChicken = document.getElementById('stats-filter-chicken').value;
             let logs = productionCache;
             
-            // Filtro Gallina
             if(selectedChicken !== 'all') {
                 logs = logs.filter(l => l.chickenId === selectedChicken);
             }
@@ -693,7 +776,6 @@
             const now = new Date();
 
             if (currentChartPeriod === 'week') {
-                // Ultimi 7 giorni
                 for(let i=6; i>=0; i--) {
                     const d = new Date();
                     d.setDate(now.getDate() - i);
@@ -702,7 +784,6 @@
                     data.push(logs.filter(l => l.date === dateStr).length);
                 }
             } else if (currentChartPeriod === 'month') {
-                // Ultimi 15 giorni per leggibilità
                  for(let i=14; i>=0; i--) {
                     const d = new Date();
                     d.setDate(now.getDate() - i);
@@ -711,7 +792,6 @@
                     data.push(logs.filter(l => l.date === dateStr).length);
                 }
             } else if (currentChartPeriod === 'year') {
-                // 12 Mesi
                 const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
                 labels = months;
                 data = new Array(12).fill(0);
