@@ -184,7 +184,7 @@
             </div>
             
             <form id="form-chicken" class="space-y-4 pb-20">
-                <!-- ID Nascosto (vuoto se nuova, valorizzato se modifica) -->
+                <!-- ID Nascosto -->
                 <input type="hidden" id="input-chk-id">
 
                 <div>
@@ -230,9 +230,68 @@
                 <div class="flex items-center justify-between p-3 border rounded-lg">
                     <span class="text-gray-700">In deposizione attiva?</span>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="input-chk-active" checked class="sr-only peer" disabled> <!-- Disabled logic handled via JS -->
+                        <input type="checkbox" id="input-chk-active" checked class="sr-only peer" disabled>
                         <div id="toggle-bg" class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                     </label>
+                </div>
+
+                <!-- NUOVA SEZIONE: STATISTICHE DETTAGLIATE (Solo lettura) -->
+                <div id="chk-stats-block" class="hidden mt-6 space-y-4">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">Report Produzione</h3>
+                    
+                    <!-- Settimana Corrente Visuale -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <p class="text-xs text-gray-500 font-bold uppercase mb-3">Settimana Corrente</p>
+                        <div class="flex justify-between items-center" id="stat-current-week-visual">
+                            <!-- Generato via JS: Cerchietti L M M G V S D -->
+                        </div>
+                    </div>
+
+                    <!-- Griglia Metriche -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Totale Anno</span>
+                            <span class="text-2xl font-bold text-yellow-600" id="stat-total-year">-</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Giorni fa</span>
+                            <span class="text-xl font-bold text-gray-700" id="stat-days-since">-</span>
+                            <span class="text-[10px] text-gray-400">Ultimo uovo</span>
+                        </div>
+                    </div>
+
+                    <!-- Serie (Streaks) -->
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div class="text-center w-1/2 border-r border-gray-100">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Serie Attuale</span>
+                            <span class="text-xl font-bold text-green-600" id="stat-streak-current">-</span>
+                            <span class="text-[10px] text-gray-400">giorni</span>
+                        </div>
+                        <div class="text-center w-1/2">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Record</span>
+                            <span class="text-xl font-bold text-gray-600" id="stat-streak-record">-</span>
+                            <span class="text-[10px] text-gray-400">giorni</span>
+                        </div>
+                    </div>
+
+                    <!-- Medie -->
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                         <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+                            <span class="text-xs text-gray-600">Media Settimanale</span>
+                            <span class="font-bold text-gray-800" id="stat-avg-week">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-600">Media Mensile</span>
+                            <span class="font-bold text-gray-800" id="stat-avg-month">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Date Chiave -->
+                    <div class="text-xs text-gray-400 flex justify-between px-1">
+                        <span>1° Uovo: <b id="stat-first-egg">-</b></span>
+                        <span>Ultimo: <b id="stat-last-egg">-</b></span>
+                    </div>
+
                 </div>
 
                 <div class="flex gap-2 mt-8">
@@ -568,6 +627,7 @@
             const title = document.getElementById('chicken-form-title');
             const btnSave = document.getElementById('btn-save-chicken');
             const btnDelete = document.getElementById('btn-delete-chicken');
+            const statsBlock = document.getElementById('chk-stats-block'); 
             const inputs = form.querySelectorAll('input, select');
             const chkActive = document.getElementById('input-chk-active');
 
@@ -578,13 +638,13 @@
             // Abilita/Disabilita Inputs
             const isReadOnly = (mode === 'view');
             inputs.forEach(i => i.disabled = isReadOnly);
-            // Il checkbox custom richiede logica separata per UI? No, disabled su input basta.
 
             if (mode === 'create') {
                 title.innerText = "Nuova Gallina";
                 btnSave.classList.remove('hidden');
                 btnDelete.classList.add('hidden');
-                chkActive.checked = true; // Default attiva
+                statsBlock.classList.add('hidden'); 
+                chkActive.checked = true; 
             } else {
                 // Edit o View: Popola dati
                 document.getElementById('input-chk-id').value = data.id;
@@ -600,10 +660,141 @@
                     title.innerText = "Modifica Gallina";
                     btnSave.classList.remove('hidden');
                     btnDelete.classList.remove('hidden');
+                    statsBlock.classList.add('hidden'); 
                 } else {
                     title.innerText = "Dettagli Gallina";
-                    btnSave.classList.add('hidden'); // Nascondi bottone salva
+                    btnSave.classList.add('hidden'); 
                     btnDelete.classList.add('hidden');
+                    statsBlock.classList.remove('hidden'); 
+
+                    // --- CALCOLO STATISTICHE AVANZATE ---
+                    if(productionCache && data.id) {
+                        const now = new Date();
+                        const startOfYear = new Date(now.getFullYear(), 0, 1);
+                        
+                        // Filtra log della gallina e ordina per data
+                        const myLogs = productionCache
+                            .filter(p => p.chickenId === data.id)
+                            .sort((a,b) => new Date(a.date) - new Date(b.date));
+                        
+                        // 1. Totale Anno
+                        const countYear = myLogs.filter(l => new Date(l.date) >= startOfYear).length;
+                        document.getElementById('stat-total-year').innerText = countYear;
+
+                        // 2. Primo e Ultimo Uovo
+                        let firstEgg = "-";
+                        let lastEgg = "-";
+                        let daysSince = "-";
+
+                        if(myLogs.length > 0) {
+                            firstEgg = new Date(myLogs[0].date).toLocaleDateString('it-IT');
+                            const lastDateObj = new Date(myLogs[myLogs.length - 1].date);
+                            lastEgg = lastDateObj.toLocaleDateString('it-IT');
+                            
+                            // Giorni dall'ultimo uovo
+                            const diffTime = Math.abs(now - lastDateObj);
+                            daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        }
+                        
+                        document.getElementById('stat-first-egg').innerText = firstEgg;
+                        document.getElementById('stat-last-egg').innerText = lastEgg;
+                        document.getElementById('stat-days-since').innerText = daysSince !== "-" ? daysSince : "N/A";
+
+                        // 3. Serie (Streaks)
+                        let currentStreak = 0;
+                        let maxStreak = 0;
+                        let tempStreak = 0;
+                        
+                        if(myLogs.length > 0) {
+                            // Uniamo le date uniche ordinate
+                            const uniqueDates = [...new Set(myLogs.map(l => l.date))];
+                            
+                            for(let i=0; i<uniqueDates.length; i++) {
+                                if(i === 0) {
+                                    tempStreak = 1;
+                                } else {
+                                    const prev = new Date(uniqueDates[i-1]);
+                                    const curr = new Date(uniqueDates[i]);
+                                    const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+                                    
+                                    if(diffDays === 1) {
+                                        tempStreak++;
+                                    } else {
+                                        if(tempStreak > maxStreak) maxStreak = tempStreak;
+                                        tempStreak = 1;
+                                    }
+                                }
+                            }
+                            if(tempStreak > maxStreak) maxStreak = tempStreak;
+
+                            // Current Streak: Contiamo a ritroso dall'ultima data se è oggi o ieri
+                            const lastLogDate = new Date(uniqueDates[uniqueDates.length - 1]);
+                            const diffFromToday = Math.floor((now - lastLogDate) / (1000 * 60 * 60 * 24));
+                            
+                            // Se l'ultimo uovo è stato oggi o ieri, la streak è attiva
+                            if(diffFromToday <= 1) {
+                                currentStreak = 1; // partiamo dall'ultimo
+                                for(let i = uniqueDates.length - 2; i >= 0; i--) {
+                                    const prev = new Date(uniqueDates[i+1]);
+                                    const curr = new Date(uniqueDates[i]);
+                                    const diff = (prev - curr) / (1000 * 60 * 60 * 24);
+                                    if(diff === 1) currentStreak++;
+                                    else break;
+                                }
+                            } else {
+                                currentStreak = 0;
+                            }
+                        }
+
+                        document.getElementById('stat-streak-current').innerText = currentStreak;
+                        document.getElementById('stat-streak-record').innerText = maxStreak;
+
+                        // 4. Medie
+                        let avgWeek = "0.0";
+                        let avgMonth = "0.0";
+                        if(myLogs.length > 1) {
+                             const first = new Date(myLogs[0].date);
+                             const daysActive = Math.max(1, Math.floor((now - first) / (1000 * 60 * 60 * 24)));
+                             const total = myLogs.length;
+                             
+                             avgWeek = (total / (daysActive / 7)).toFixed(1);
+                             avgMonth = (total / (daysActive / 30.44)).toFixed(1);
+                        }
+                        document.getElementById('stat-avg-week').innerText = avgWeek;
+                        document.getElementById('stat-avg-month').innerText = avgMonth;
+
+                        // 5. Visualizzazione Settimana Corrente
+                        const visualContainer = document.getElementById('stat-current-week-visual');
+                        visualContainer.innerHTML = '';
+                        
+                        // Calcola inizio settimana (Lunedì)
+                        const startOfWeek = new Date(now);
+                        const day = startOfWeek.getDay() || 7; // Dom=0 -> 7
+                        if(day !== 1) startOfWeek.setHours(-24 * (day - 1));
+                        
+                        const daysLabels = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+                        
+                        for(let i=0; i<7; i++) {
+                            const d = new Date(startOfWeek);
+                            d.setDate(startOfWeek.getDate() + i);
+                            const dateStr = d.toISOString().split('T')[0];
+                            
+                            const hasEgg = myLogs.some(l => l.date === dateStr);
+                            const isToday = dateStr === now.toISOString().split('T')[0];
+
+                            const circle = document.createElement('div');
+                            circle.className = `flex flex-col items-center gap-1`;
+                            circle.innerHTML = `
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                                    hasEgg ? 'bg-orange-400 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-400'
+                                } ${isToday ? 'ring-2 ring-yellow-400' : ''}">
+                                    ${hasEgg ? '🥚' : ''}
+                                </div>
+                                <span class="text-[10px] text-gray-400 font-bold">${daysLabels[i]}</span>
+                            `;
+                            visualContainer.appendChild(circle);
+                        }
+                    }
                 }
             }
         };
