@@ -50,12 +50,34 @@
 <body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
 
     <!-- HEADER / NAV -->
-    <header class="bg-yellow-500 text-white shadow-md z-20 flex justify-between items-center p-4">
+    <header id="main-header" class="bg-yellow-500 text-white shadow-md z-20 flex justify-between items-center p-4 transition-colors duration-300">
         <div class="flex items-center gap-3">
             <i class="fa-solid fa-egg text-2xl"></i>
-            <h1 class="text-xl font-bold tracking-wide" id="page-title">Il Mio Pollaio</h1>
+            <div class="flex flex-col">
+                <h1 class="text-xl font-bold tracking-wide leading-tight" id="page-title">Il Mio Pollaio</h1>
+                <span id="viewing-label" class="text-[10px] font-mono hidden opacity-80">VISTA OSPITE</span>
+            </div>
         </div>
-        <div id="user-info" class="hidden flex items-center gap-2">
+        <div id="user-info" class="hidden flex items-center gap-3">
+            <!-- Share Button (Solo proprietario) -->
+            <button id="btn-share-app" onclick="openShareModal()" class="hidden text-white hover:text-yellow-100 transition-colors">
+                <i class="fa-solid fa-share-nodes text-xl"></i>
+            </button>
+            
+            <!-- Switch Profile (Se invitato) -->
+            <div class="relative">
+                <button id="btn-switch-profile" onclick="toggleProfileMenu()" class="hidden text-white bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors">
+                    <i class="fa-solid fa-users text-sm"></i>
+                </button>
+                <!-- Dropdown Menu -->
+                <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl text-gray-800 py-1 border border-gray-100 z-50">
+                    <p class="px-4 py-2 text-xs font-bold text-gray-400 uppercase border-b">Visualizza Dati Di:</p>
+                    <div id="profile-list">
+                        <!-- Popolato via JS -->
+                    </div>
+                </div>
+            </div>
+
             <img id="user-avatar" src="" class="w-8 h-8 rounded-full border-2 border-white">
             <button onclick="logout()" class="text-sm bg-yellow-600 px-2 py-1 rounded shadow"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
@@ -107,13 +129,13 @@
             
             <!-- Versione App -->
             <div class="text-center mt-10 mb-4">
-                <p class="text-[10px] text-gray-400">App v1.8</p>
+                <p class="text-[10px] text-gray-400">App v1.9</p>
             </div>
         </section>
 
         <!-- DETTAGLIO POLLAIO (LISTA GALLINE) -->
         <section id="view-coop-detail" class="hidden fade-in space-y-4 pb-20">
-            <button onclick="goBack('dashboard')" class="text-yellow-600 font-semibold mb-2 flex items-center gap-2">
+            <button onclick="goBack('dashboard')" class="text-yellow-600 font-semibold mb-2 flex items-center gap-2 hover:text-yellow-700 transition-colors">
                 <i class="fa-solid fa-arrow-left"></i> Torna ai Pollai
             </button>
             
@@ -201,7 +223,7 @@
                     </div>
                 </div>
 
-                <!-- BLOCCO 2: ANDAMENTO (NUOVO) -->
+                <!-- BLOCCO 2: ANDAMENTO -->
                 <div class="bg-white p-4 rounded-xl shadow-sm mt-4">
                     <h4 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-arrow-trend-up text-yellow-500"></i> Andamento
@@ -399,7 +421,7 @@
                     <!-- Checkbox galline generate via JS -->
                 </div>
 
-                <button onclick="saveDailyEggs()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow-md">
+                <button id="btn-confirm-egg-save" onclick="saveDailyEggs()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow-md">
                     Salva Raccolto
                 </button>
             </div>
@@ -417,6 +439,23 @@
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('modal-edit-coop').classList.add('hidden')" class="w-1/2 py-2 border border-gray-300 rounded text-gray-700">Annulla</button>
                     <button onclick="saveCoopEdit()" class="w-1/2 py-2 bg-yellow-500 text-white rounded font-bold">Salva</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: CONDIVIDI (SHARE) -->
+        <div id="modal-share" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-xl p-6 shadow-2xl">
+                <h3 class="text-lg font-bold mb-4 text-gray-700 flex items-center gap-2"><i class="fa-solid fa-share-nodes"></i> Condividi Accesso</h3>
+                <p class="text-xs text-gray-500 mb-4">Inserisci l'email Gmail dell'utente con cui vuoi condividere il tuo pollaio in <b>sola lettura</b>.</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">Email Ospite</label>
+                    <input type="email" id="share-email-input" placeholder="es. amico@gmail.com" class="mt-1 w-full border rounded-lg p-3">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('modal-share').classList.add('hidden')" class="w-1/2 py-2 border border-gray-300 rounded text-gray-700">Annulla</button>
+                    <button onclick="confirmShare()" class="w-1/2 py-2 bg-yellow-500 text-white rounded font-bold shadow-sm">Invita</button>
                 </div>
             </div>
         </div>
@@ -453,11 +492,15 @@
 
         // State Globali
         let currentUser = null;
+        let dataOwnerId = null; // ID del proprietario dei dati (io o chi mi ha invitato)
+        let isReadOnly = false; // Se true, disabilita modifiche
+        
         let currentCoopId = null;
-        let chickensCache = []; // Cache galline
-        let productionCache = []; // Cache uova (per stats)
+        let chickensCache = []; 
+        let productionCache = [];
         let chartInstance = null;
         let currentChartPeriod = 'week';
+        let sharedProfiles = []; // Lista profili condivisi
 
         // Elementi DOM
         const views = {
@@ -479,11 +522,20 @@
             window.location.reload();
         };
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
                 document.getElementById('user-info').classList.remove('hidden');
                 document.getElementById('user-avatar').src = user.photoURL;
+                
+                // Default: vedo i miei dati
+                dataOwnerId = user.uid;
+                isReadOnly = false;
+                updateHeaderStyle();
+
+                // Check inviti ricevuti
+                await checkIncomingShares();
+
                 showView('dashboard');
                 loadCoops();
             } else {
@@ -492,21 +544,129 @@
             }
         });
 
+        // --- SHARING LOGIC ---
+        
+        // 1. Apri modale condivisione
+        window.openShareModal = () => {
+            document.getElementById('modal-share').classList.remove('hidden');
+        };
+
+        // 2. Salva invito su Firestore
+        window.confirmShare = async () => {
+            const email = document.getElementById('share-email-input').value.trim();
+            if(!email) return alert("Inserisci una email valida");
+            
+            try {
+                // Salviamo nella collection 'shared_access'
+                // Struttura: { ownerUid: "MioID", ownerEmail: "MioEmail", viewerEmail: "AltroEmail" }
+                await addDoc(collection(db, 'shared_access'), {
+                    ownerUid: currentUser.uid,
+                    ownerEmail: currentUser.email,
+                    viewerEmail: email,
+                    createdAt: Timestamp.now()
+                });
+                
+                alert(`Accesso condiviso con ${email}`);
+                document.getElementById('modal-share').classList.add('hidden');
+                document.getElementById('share-email-input').value = '';
+            } catch(e) { console.error(e); alert("Errore condivisione"); }
+        };
+
+        // 3. Controlla se qualcuno ha condiviso con me
+        async function checkIncomingShares() {
+            const q = query(collection(db, 'shared_access'), where('viewerEmail', '==', currentUser.email));
+            const snapshot = await getDocs(q);
+            
+            sharedProfiles = [];
+            // Aggiungi sempre me stesso
+            sharedProfiles.push({ uid: currentUser.uid, name: "Il Mio Pollaio" });
+
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                sharedProfiles.push({ uid: d.ownerUid, name: `Pollaio di ${d.ownerEmail}` });
+            });
+
+            // Se ho inviti, mostra pulsante switch
+            const btnSwitch = document.getElementById('btn-switch-profile');
+            if(sharedProfiles.length > 1) {
+                btnSwitch.classList.remove('hidden');
+                renderProfileMenu();
+            } else {
+                btnSwitch.classList.add('hidden');
+            }
+            
+            // Mostra pulsante Share SOLO se sono sul mio profilo
+            document.getElementById('btn-share-app').classList.toggle('hidden', isReadOnly);
+        }
+
+        function renderProfileMenu() {
+            const list = document.getElementById('profile-list');
+            list.innerHTML = '';
+            sharedProfiles.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0';
+                item.innerHTML = `<span class="text-sm font-medium ${p.uid === dataOwnerId ? 'text-yellow-600 font-bold' : ''}">${p.name}</span>`;
+                item.onclick = () => switchProfile(p.uid);
+                list.appendChild(item);
+            });
+        }
+
+        window.toggleProfileMenu = () => {
+            const menu = document.getElementById('profile-menu');
+            menu.classList.toggle('hidden');
+        };
+
+        window.switchProfile = (targetUid) => {
+            dataOwnerId = targetUid;
+            isReadOnly = (targetUid !== currentUser.uid); // Se non sono io, è solo lettura
+            
+            // UI Updates
+            updateHeaderStyle();
+            document.getElementById('profile-menu').classList.add('hidden');
+            document.getElementById('btn-share-app').classList.toggle('hidden', isReadOnly);
+            
+            // Ricarica tutto
+            showView('dashboard');
+            loadCoops(); 
+            // checkIncomingShares() non serve richiamare, i profili restano
+            renderProfileMenu(); // Aggiorna grassetto selezione
+        };
+
+        function updateHeaderStyle() {
+            const header = document.getElementById('main-header');
+            const label = document.getElementById('viewing-label');
+            const title = document.getElementById('page-title');
+            
+            if(isReadOnly) {
+                // Stile Ospite (Blu)
+                header.classList.remove('bg-yellow-500');
+                header.classList.add('bg-blue-600');
+                label.classList.remove('hidden');
+                // Trova nome proprietario
+                const owner = sharedProfiles.find(p => p.uid === dataOwnerId);
+                title.innerText = owner ? owner.name : "Pollaio Condiviso";
+            } else {
+                // Stile Proprietario (Giallo)
+                header.classList.add('bg-yellow-500');
+                header.classList.remove('bg-blue-600');
+                label.classList.add('hidden');
+                title.innerText = "Il Mio Pollaio";
+            }
+        }
+
+
         // --- NAVIGAZIONE ---
         window.showView = (viewName) => {
             Object.values(views).forEach(el => el.classList.add('hidden'));
             if(views[viewName]) {
                 views[viewName].classList.remove('hidden');
-            } else {
-                console.error("View non trovata:", viewName);
-                return;
             }
             
-            // Gestione FAB
-            if(viewName === 'dashboard') {
+            // Gestione FAB (Nascosto se ReadOnly)
+            if(viewName === 'dashboard' && !isReadOnly) {
                 fab.classList.remove('hidden');
                 fab.onclick = () => showView('addCoop');
-            } else if (viewName === 'coopDetail') {
+            } else if (viewName === 'coopDetail' && !isReadOnly) {
                 fab.classList.remove('hidden');
                 fab.onclick = () => openChickenForm('create');
             } else {
@@ -523,9 +683,10 @@
         const formCoop = document.getElementById('form-coop');
         formCoop.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if(isReadOnly) return;
             const name = document.getElementById('input-coop-name').value;
             try {
-                await addDoc(collection(db, `users/${currentUser.uid}/coops`), {
+                await addDoc(collection(db, `users/${dataOwnerId}/coops`), {
                     name: name,
                     createdAt: Timestamp.now()
                 });
@@ -535,7 +696,8 @@
         });
 
         function loadCoops() {
-            const q = query(collection(db, `users/${currentUser.uid}/coops`), orderBy('createdAt', 'desc'));
+            // Usa dataOwnerId invece di currentUser.uid
+            const q = query(collection(db, `users/${dataOwnerId}/coops`), orderBy('createdAt', 'desc'));
             const listEl = document.getElementById('coops-list');
             
             const dashWeekly = document.getElementById('dash-weekly-eggs');
@@ -563,8 +725,8 @@
                     const coopId = docSnap.id;
 
                     const [chickensSnap, prodSnap] = await Promise.all([
-                        getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)),
-                        getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`))
+                        getDocs(collection(db, `users/${dataOwnerId}/coops/${coopId}/chickens`)),
+                        getDocs(collection(db, `users/${dataOwnerId}/coops/${coopId}/production`))
                     ]);
 
                     const memberCount = chickensSnap.size;
@@ -575,6 +737,18 @@
 
                     globalWeek += eggsWeek;
                     globalYear += eggsYear;
+
+                    // Bottoni condizionali (edit/uova) nascosti se ReadOnly
+                    const actionButtons = isReadOnly ? '' : `
+                        <div class="flex flex-col gap-2">
+                             <button onclick="event.stopPropagation(); openEditCoop('${docSnap.id}', '${coop.name.replace(/'/g, "\\'")}')" class="bg-gray-100 text-gray-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-gray-200">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-4 rounded-full w-20 h-20 flex items-center justify-center shadow-sm hover:bg-yellow-200">
+                                <i class="fa-solid fa-egg text-2xl"></i>
+                            </button>
+                        </div>
+                    `;
 
                     const el = document.createElement('div');
                     el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:bg-gray-50 transition-colors cursor-pointer';
@@ -590,14 +764,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-2">
-                             <button onclick="event.stopPropagation(); openEditCoop('${docSnap.id}', '${coop.name.replace(/'/g, "\\'")}')" class="bg-gray-100 text-gray-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-gray-200">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-4 rounded-full w-20 h-20 flex items-center justify-center shadow-sm hover:bg-yellow-200">
-                                <i class="fa-solid fa-egg text-2xl"></i>
-                            </button>
-                        </div>
+                        ${actionButtons}
                     `;
                     el.onclick = () => openCoopDetail(docSnap.id, coop);
                     listEl.appendChild(el);
@@ -609,16 +776,18 @@
         }
 
         window.openEditCoop = (id, currentName) => {
+            if(isReadOnly) return;
             document.getElementById('edit-coop-id').value = id;
             document.getElementById('edit-coop-name').value = currentName;
             document.getElementById('modal-edit-coop').classList.remove('hidden');
         };
 
         window.saveCoopEdit = async () => {
+            if(isReadOnly) return;
             const id = document.getElementById('edit-coop-id').value;
             const newName = document.getElementById('edit-coop-name').value;
             try {
-                await updateDoc(doc(db, `users/${currentUser.uid}/coops/${id}`), {
+                await updateDoc(doc(db, `users/${dataOwnerId}/coops/${id}`), {
                     name: newName
                 });
                 document.getElementById('modal-edit-coop').classList.add('hidden');
@@ -628,24 +797,23 @@
         window.openCoopDetail = (coopId, coopData) => {
             currentCoopId = coopId;
             document.getElementById('detail-coop-name').innerText = coopData.name;
-            document.getElementById('page-title').innerText = coopData.name;
+            document.getElementById('page-title').innerText = coopData.name; // Titolo Header
             showView('coopDetail');
             loadChickensAndStats(coopId);
             switchCoopTab('members');
         };
 
         async function loadChickensAndStats(coopId) {
-            const chickensListEl = document.getElementById('chickens-list');
-            const selectFilter = document.getElementById('stats-filter-chicken');
-            
-            const chkSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`));
+            // Usa dataOwnerId
+            const chkSnap = await getDocs(collection(db, `users/${dataOwnerId}/coops/${coopId}/chickens`));
             chickensCache = chkSnap.docs.map(d => ({id: d.id, ...d.data()}));
 
-            const prodSnap = await getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/production`));
+            const prodSnap = await getDocs(collection(db, `users/${dataOwnerId}/coops/${coopId}/production`));
             productionCache = prodSnap.docs.map(d => d.data());
 
             document.getElementById('detail-coop-members').innerText = `${chickensCache.length} Membri`;
 
+            const selectFilter = document.getElementById('stats-filter-chicken');
             selectFilter.innerHTML = '<option value="all">Tutto il Pollaio</option>';
             chickensCache.forEach(c => {
                 const opt = document.createElement('option');
@@ -654,21 +822,15 @@
                 selectFilter.appendChild(opt);
             });
 
-            // Popola anche il selettore anni nelle statistiche
+            // Popola anni
             const yearSelect = document.getElementById('input-stats-year');
             yearSelect.innerHTML = '';
             const years = [...new Set(productionCache.map(p => p.date.split('-')[0]))].sort().reverse();
             const currentYear = new Date().getFullYear().toString();
             if(!years.includes(currentYear)) years.unshift(currentYear);
-            
-            years.forEach(y => {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.innerText = y;
-                yearSelect.appendChild(opt);
-            });
+            years.forEach(y => { const opt = document.createElement('option'); opt.value = y; opt.innerText = y; yearSelect.appendChild(opt); });
 
-
+            const chickensListEl = document.getElementById('chickens-list');
             chickensListEl.innerHTML = '';
             const startOfYear = new Date(new Date().getFullYear(), 0, 1);
 
@@ -681,9 +843,14 @@
                 const ageString = years > 0 ? `${years} Anni, ${months} Mesi` : `${months} Mesi`;
 
                 const personalEggs = productionCache.filter(p => p.chickenId === c.id && new Date(p.date) >= startOfYear).length;
-
                 const cString = encodeURIComponent(JSON.stringify(c));
                 const icon = c.sex === 'M' ? '🐓' : '🐔';
+
+                // Edit Button: Nascosto se ReadOnly
+                const editBtn = isReadOnly ? '' : `
+                    <button onclick="event.stopPropagation(); openChickenForm('edit', JSON.parse(decodeURIComponent('${cString}')))" class="absolute top-2 right-2 bg-white text-yellow-600 p-2 rounded-full shadow-sm border border-gray-100 hover:bg-yellow-50 z-10">
+                        <i class="fa-solid fa-pen text-sm"></i>
+                    </button>`;
 
                 const el = document.createElement('div');
                 el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group active:bg-gray-50 cursor-pointer';
@@ -706,24 +873,21 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="event.stopPropagation(); openChickenForm('edit', JSON.parse(decodeURIComponent('${cString}')))" class="absolute top-2 right-2 bg-white text-yellow-600 p-2 rounded-full shadow-sm border border-gray-100 hover:bg-yellow-50 z-10">
-                        <i class="fa-solid fa-pen text-sm"></i>
-                    </button>
+                    ${editBtn}
                 `;
                 chickensListEl.appendChild(el);
             });
 
-            // Set default date inputs
+            // Set default inputs
             const today = new Date();
-            document.getElementById('input-stats-month').value = today.toISOString().slice(0, 7); // YYYY-MM
-            // Week input needs specialized format 'YYYY-Www', simplified here or keep default
+            document.getElementById('input-stats-month').value = today.toISOString().slice(0, 7); 
 
             if(!document.getElementById('content-stats').classList.contains('hidden')) {
                 updateChartFromCache();
             }
         }
 
-        // --- GESTIONE FORM UNIFICATO (CREATE / EDIT / VIEW) ---
+        // --- GESTIONE FORM UNIFICATO ---
         window.openChickenForm = (mode, data = null) => {
             showView('addChicken');
             const form = document.getElementById('form-chicken');
@@ -737,8 +901,9 @@
             form.reset();
             document.getElementById('input-chk-id').value = '';
             
-            const isReadOnly = (mode === 'view');
-            inputs.forEach(i => i.disabled = isReadOnly);
+            // Forza readonly se siamo ospiti O se modalità view
+            const isInputDisabled = (mode === 'view') || isReadOnly;
+            inputs.forEach(i => i.disabled = isInputDisabled);
 
             if (mode === 'create') {
                 title.innerText = "Nuova Gallina";
@@ -766,133 +931,95 @@
                     btnSave.classList.add('hidden'); 
                     btnDelete.classList.add('hidden');
                     statsBlock.classList.remove('hidden'); 
-
-                    if(productionCache && data.id) {
-                        const now = new Date();
-                        const startOfYear = new Date(now.getFullYear(), 0, 1);
-                        
-                        const myLogs = productionCache
-                            .filter(p => p.chickenId === data.id)
-                            .sort((a,b) => new Date(a.date) - new Date(b.date));
-                        
-                        const countYear = myLogs.filter(l => new Date(l.date) >= startOfYear).length;
-                        document.getElementById('stat-total-year').innerText = countYear;
-
-                        let firstEgg = "-";
-                        let lastEgg = "-";
-                        let daysSince = "-";
-
-                        if(myLogs.length > 0) {
-                            firstEgg = new Date(myLogs[0].date).toLocaleDateString('it-IT');
-                            const lastDateObj = new Date(myLogs[myLogs.length - 1].date);
-                            lastEgg = lastDateObj.toLocaleDateString('it-IT');
-                            const diffTime = Math.abs(now - lastDateObj);
-                            daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                        }
-                        
-                        document.getElementById('stat-first-egg').innerText = firstEgg;
-                        document.getElementById('stat-last-egg').innerText = lastEgg;
-                        document.getElementById('stat-days-since').innerText = daysSince !== "-" ? daysSince : "N/A";
-
-                        let currentStreak = 0;
-                        let maxStreak = 0;
-                        let tempStreak = 0;
-                        
-                        if(myLogs.length > 0) {
-                            const uniqueDates = [...new Set(myLogs.map(l => l.date))];
-                            
-                            for(let i=0; i<uniqueDates.length; i++) {
-                                if(i === 0) {
-                                    tempStreak = 1;
-                                } else {
-                                    const prev = new Date(uniqueDates[i-1]);
-                                    const curr = new Date(uniqueDates[i]);
-                                    const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
-                                    
-                                    if(diffDays === 1) {
-                                        tempStreak++;
-                                    } else {
-                                        if(tempStreak > maxStreak) maxStreak = tempStreak;
-                                        tempStreak = 1;
-                                    }
-                                }
-                            }
-                            if(tempStreak > maxStreak) maxStreak = tempStreak;
-
-                            const lastLogDate = new Date(uniqueDates[uniqueDates.length - 1]);
-                            const diffFromToday = Math.floor((now - lastLogDate) / (1000 * 60 * 60 * 24));
-                            
-                            if(diffFromToday <= 1) {
-                                currentStreak = 1;
-                                for(let i = uniqueDates.length - 2; i >= 0; i--) {
-                                    const prev = new Date(uniqueDates[i+1]);
-                                    const curr = new Date(uniqueDates[i]);
-                                    const diff = (prev - curr) / (1000 * 60 * 60 * 24);
-                                    if(diff === 1) currentStreak++;
-                                    else break;
-                                }
-                            } else {
-                                currentStreak = 0;
-                            }
-                        }
-
-                        document.getElementById('stat-streak-current').innerText = currentStreak;
-                        document.getElementById('stat-streak-record').innerText = maxStreak;
-
-                        let avgWeek = "0.0";
-                        let avgMonth = "0.0";
-                        if(myLogs.length > 1) {
-                             const first = new Date(myLogs[0].date);
-                             const daysActive = Math.max(1, Math.floor((now - first) / (1000 * 60 * 60 * 24)));
-                             const total = myLogs.length;
-                             
-                             avgWeek = (total / (daysActive / 7)).toFixed(1);
-                             avgMonth = (total / (daysActive / 30.44)).toFixed(1);
-                        }
-                        document.getElementById('stat-avg-week').innerText = avgWeek;
-                        document.getElementById('stat-avg-month').innerText = avgMonth;
-
-                        const visualContainer = document.getElementById('stat-current-week-visual');
-                        visualContainer.innerHTML = '';
-                        
-                        const startOfWeek = new Date(now);
-                        const day = startOfWeek.getDay() || 7; 
-                        if(day !== 1) startOfWeek.setHours(-24 * (day - 1));
-                        
-                        const daysLabels = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-                        
-                        for(let i=0; i<7; i++) {
-                            const d = new Date(startOfWeek);
-                            d.setDate(startOfWeek.getDate() + i);
-                            const dateStr = d.toISOString().split('T')[0];
-                            
-                            const hasEgg = myLogs.some(l => l.date === dateStr);
-                            const isToday = dateStr === now.toISOString().split('T')[0];
-
-                            const circle = document.createElement('div');
-                            circle.className = `flex flex-col items-center gap-1`;
-                            circle.innerHTML = `
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                                    hasEgg ? 'bg-orange-400 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-400'
-                                } ${isToday ? 'ring-2 ring-yellow-400' : ''}">
-                                    ${hasEgg ? '🥚' : ''}
-                                </div>
-                                <span class="text-[10px] text-gray-400 font-bold">${daysLabels[i]}</span>
-                            `;
-                            visualContainer.appendChild(circle);
-                        }
-                    }
+                    // ... (Codice calcolo statistiche avanzate esistente) ...
+                    calculateChickenStats(data.id); // Refactoring per pulizia
                 }
             }
         };
 
+        function calculateChickenStats(chickenId) {
+             if(productionCache && chickenId) {
+                const now = new Date();
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
+                const myLogs = productionCache
+                    .filter(p => p.chickenId === chickenId)
+                    .sort((a,b) => new Date(a.date) - new Date(b.date));
+                
+                const countYear = myLogs.filter(l => new Date(l.date) >= startOfYear).length;
+                document.getElementById('stat-total-year').innerText = countYear;
+
+                let firstEgg = "-", lastEgg = "-", daysSince = "-";
+                if(myLogs.length > 0) {
+                    firstEgg = new Date(myLogs[0].date).toLocaleDateString('it-IT');
+                    const lastDateObj = new Date(myLogs[myLogs.length - 1].date);
+                    lastEgg = lastDateObj.toLocaleDateString('it-IT');
+                    const diffTime = Math.abs(now - lastDateObj);
+                    daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                }
+                document.getElementById('stat-first-egg').innerText = firstEgg;
+                document.getElementById('stat-last-egg').innerText = lastEgg;
+                document.getElementById('stat-days-since').innerText = daysSince !== "-" ? daysSince : "N/A";
+
+                // Streaks & Averages logic (riportata tal quale per brevità, già funzionante)
+                let currentStreak = 0, maxStreak = 0, tempStreak = 0;
+                if(myLogs.length > 0) {
+                    const uniqueDates = [...new Set(myLogs.map(l => l.date))];
+                    for(let i=0; i<uniqueDates.length; i++) {
+                        if(i === 0) tempStreak = 1;
+                        else {
+                            const diffDays = (new Date(uniqueDates[i]) - new Date(uniqueDates[i-1])) / (86400000);
+                            if(diffDays === 1) tempStreak++;
+                            else { if(tempStreak > maxStreak) maxStreak = tempStreak; tempStreak = 1; }
+                        }
+                    }
+                    if(tempStreak > maxStreak) maxStreak = tempStreak;
+                    const diffFromToday = Math.floor((now - new Date(uniqueDates[uniqueDates.length - 1])) / 86400000);
+                    if(diffFromToday <= 1) {
+                        currentStreak = 1;
+                        for(let i = uniqueDates.length - 2; i >= 0; i--) {
+                            if((new Date(uniqueDates[i+1]) - new Date(uniqueDates[i])) / 86400000 === 1) currentStreak++; else break;
+                        }
+                    }
+                }
+                document.getElementById('stat-streak-current').innerText = currentStreak;
+                document.getElementById('stat-streak-record').innerText = maxStreak;
+
+                let avgWeek = "0.0", avgMonth = "0.0";
+                if(myLogs.length > 1) {
+                        const daysActive = Math.max(1, Math.floor((now - new Date(myLogs[0].date)) / 86400000));
+                        avgWeek = (myLogs.length / (daysActive / 7)).toFixed(1);
+                        avgMonth = (myLogs.length / (daysActive / 30.44)).toFixed(1);
+                }
+                document.getElementById('stat-avg-week').innerText = avgWeek;
+                document.getElementById('stat-avg-month').innerText = avgMonth;
+
+                // Visual Week
+                const visualContainer = document.getElementById('stat-current-week-visual');
+                visualContainer.innerHTML = '';
+                const startOfWeek = new Date(now);
+                const day = startOfWeek.getDay() || 7; 
+                if(day !== 1) startOfWeek.setHours(-24 * (day - 1));
+                const daysLabels = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+                for(let i=0; i<7; i++) {
+                    const d = new Date(startOfWeek);
+                    d.setDate(startOfWeek.getDate() + i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const hasEgg = myLogs.some(l => l.date === dateStr);
+                    const isToday = dateStr === now.toISOString().split('T')[0];
+                    const circle = document.createElement('div');
+                    circle.className = `flex flex-col items-center gap-1`;
+                    circle.innerHTML = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${hasEgg ? 'bg-orange-400 text-white shadow-md scale-110' : 'bg-gray-100 text-gray-400'} ${isToday ? 'ring-2 ring-yellow-400' : ''}">${hasEgg ? '🥚' : ''}</div><span class="text-[10px] text-gray-400 font-bold">${daysLabels[i]}</span>`;
+                    visualContainer.appendChild(circle);
+                }
+            }
+        }
+
         window.deleteCurrentChicken = async () => {
+            if(isReadOnly) return;
             if(!confirm("Sei sicuro di voler rimuovere questa gallina?")) return;
             const id = document.getElementById('input-chk-id').value;
-            if(!id) return;
-
             try {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens/${id}`));
+                await deleteDoc(doc(db, `users/${dataOwnerId}/coops/${currentCoopId}/chickens/${id}`));
                 showView('coopDetail');
                 loadChickensAndStats(currentCoopId);
             } catch(e) { alert("Errore eliminazione"); }
@@ -901,10 +1028,9 @@
         const formChicken = document.getElementById('form-chicken');
         formChicken.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!currentCoopId) return;
-
+            if(isReadOnly) return;
+            // ... (logica salvataggio esistente con dataOwnerId) ...
             const chkId = document.getElementById('input-chk-id').value;
-            
             const chickenData = {
                 name: document.getElementById('input-chk-name').value,
                 breed: document.getElementById('input-chk-breed').value,
@@ -915,26 +1041,19 @@
                 isActive: document.getElementById('input-chk-active').checked,
                 updatedAt: Timestamp.now()
             };
-
             try {
-                if(chkId) {
-                    await updateDoc(doc(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens/${chkId}`), chickenData);
-                } else {
-                    chickenData.createdAt = Timestamp.now();
-                    await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
-                }
-                
-                formChicken.reset();
-                showView('coopDetail');
-                loadChickensAndStats(currentCoopId);
-            } catch (err) { console.error(err); alert("Errore salvataggio gallina"); }
+                if(chkId) await updateDoc(doc(db, `users/${dataOwnerId}/coops/${currentCoopId}/chickens/${chkId}`), chickenData);
+                else { chickenData.createdAt = Timestamp.now(); await addDoc(collection(db, `users/${dataOwnerId}/coops/${currentCoopId}/chickens`), chickenData); }
+                formChicken.reset(); showView('coopDetail'); loadChickensAndStats(currentCoopId);
+            } catch (err) { console.error(err); alert("Errore salvataggio"); }
         });
 
-        // --- GESTIONE UOVA ---
         window.openEggModal = (coopId) => {
+            // Se ReadOnly non faccio nulla (il pulsante non c'è, ma per sicurezza)
+            if(isReadOnly) return;
             currentCoopId = coopId;
             if(chickensCache.length === 0) {
-                 getDocs(collection(db, `users/${currentUser.uid}/coops/${coopId}/chickens`)).then(snap => {
+                 getDocs(collection(db, `users/${dataOwnerId}/coops/${coopId}/chickens`)).then(snap => {
                     chickensCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     renderEggModalList();
                 });
@@ -948,59 +1067,43 @@
         function renderEggModalList() {
             const container = document.getElementById('egg-checklist');
             container.innerHTML = '';
-            
-            if(chickensCache.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 italic">Nessuna gallina trovata.</p>';
-                return;
-            }
-
+            if(chickensCache.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 italic">Nessuna gallina trovata.</p>'; return; }
             chickensCache.forEach(c => {
                 if(!c.isActive) return;
                 const div = document.createElement('div');
                 div.className = 'flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200';
-                div.innerHTML = `
-                    <input type="checkbox" id="egg-check-${c.id}" value="${c.id}" class="w-5 h-5 text-yellow-500 rounded focus:ring-yellow-500 border-gray-300">
-                    <label for="egg-check-${c.id}" class="ml-3 block text-sm font-medium text-gray-700 w-full cursor-pointer flex justify-between">
-                        ${c.name}
-                        <span class="w-3 h-3 rounded-full border border-gray-300 shadow-sm" style="background-color: ${c.eggColor}"></span>
-                    </label>
-                `;
+                div.innerHTML = `<input type="checkbox" id="egg-check-${c.id}" value="${c.id}" class="w-5 h-5 text-yellow-500 rounded focus:ring-yellow-500 border-gray-300"><label for="egg-check-${c.id}" class="ml-3 block text-sm font-medium text-gray-700 w-full cursor-pointer flex justify-between">${c.name}<span class="w-3 h-3 rounded-full border border-gray-300 shadow-sm" style="background-color: ${c.eggColor}"></span></label>`;
                 container.appendChild(div);
             });
         }
 
         window.toggleEggModal = (show) => {
             const m = document.getElementById('modal-add-eggs');
-            if(show) m.classList.remove('hidden');
-            else m.classList.add('hidden');
+            if(show) m.classList.remove('hidden'); else m.classList.add('hidden');
         };
 
         window.saveDailyEggs = async () => {
+            if(isReadOnly) return;
             const dateVal = document.getElementById('input-egg-date').value;
             const checks = document.querySelectorAll('input[id^="egg-check-"]:checked');
             const chickenIds = Array.from(checks).map(c => c.value);
-
-            if(chickenIds.length === 0) {
-                alert("Seleziona almeno una gallina!");
-                return;
-            }
-
+            if(chickenIds.length === 0) { alert("Seleziona almeno una gallina!"); return; }
             try {
                 for (const chkId of chickenIds) {
-                    await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/production`), {
-                        date: dateVal,
-                        chickenId: chkId,
-                        timestamp: Timestamp.now()
+                    await addDoc(collection(db, `users/${dataOwnerId}/coops/${currentCoopId}/production`), {
+                        date: dateVal, chickenId: chkId, timestamp: Timestamp.now()
                     });
                 }
-                toggleEggModal(false);
-                alert(`Salvate ${chickenIds.length} uova!`);
+                toggleEggModal(false); alert(`Salvate ${chickenIds.length} uova!`);
                 if(currentCoopId) loadChickensAndStats(currentCoopId);
                 loadCoops(); 
             } catch(e) { console.error(e); alert("Errore salvataggio"); }
         };
 
-        // --- STATISTICHE ---
+        // --- STATISTICHE E GRAFICI (RIMANGONO UGUALI, GIA' USANO productionCache) ---
+        // (Ho omesso per brevità le funzioni di rendering grafico che non cambiano logica, 
+        //  ma nel file finale sono incluse e funzionanti perché productionCache è aggiornata da loadChickensAndStats)
+        
         window.switchCoopTab = (tabName) => {
             const tabs = ['members', 'stats'];
             tabs.forEach(t => {
@@ -1009,16 +1112,12 @@
                 document.getElementById(`tab-${t}`).classList.replace('bg-white', 'transparent');
                 document.getElementById(`tab-${t}`).classList.remove('shadow');
             });
-
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
             const activeTab = document.getElementById(`tab-${tabName}`);
             activeTab.classList.replace('text-gray-500', 'text-gray-800');
             activeTab.classList.remove('transparent');
             activeTab.classList.add('bg-white', 'shadow');
-
-            if(tabName === 'stats') {
-                updateChartFromCache();
-            }
+            if(tabName === 'stats') updateChartFromCache();
         };
 
         window.setChartPeriod = (period) => {
@@ -1026,19 +1125,10 @@
             ['week', 'month', 'year'].forEach(p => {
                 const btn = document.getElementById(`btn-period-${p}`);
                 const input = document.getElementById(`input-stats-${p}`);
-                
                 if(p === period) {
-                    // Activate Button
-                    btn.classList.remove('bg-gray-100', 'text-gray-600');
-                    btn.classList.add('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
-                    // Show Input
-                    input.classList.remove('hidden');
+                    btn.classList.remove('bg-gray-100', 'text-gray-600'); btn.classList.add('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold'); input.classList.remove('hidden');
                 } else {
-                    // Deactivate Button
-                    btn.classList.add('bg-gray-100', 'text-gray-600');
-                    btn.classList.remove('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
-                    // Hide Input
-                    input.classList.add('hidden');
+                    btn.classList.add('bg-gray-100', 'text-gray-600'); btn.classList.remove('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold'); input.classList.add('hidden');
                 }
             });
             updateChartFromCache();
@@ -1055,229 +1145,99 @@
 
         window.updateChartFromCache = () => {
             if(!productionCache) return;
-
             const selectedChicken = document.getElementById('stats-filter-chicken').value;
             let logs = productionCache;
-            
-            // 1. Filtro Gallina
-            if(selectedChicken !== 'all') {
-                logs = logs.filter(l => l.chickenId === selectedChicken);
-            }
+            if(selectedChicken !== 'all') logs = logs.filter(l => l.chickenId === selectedChicken);
 
-            // 2. Filtro Periodo (Date)
-            let labels = [];
-            let data = [];
-            let filteredLogs = [];
+            let labels = [], data = [], filteredLogs = [];
             
             if (currentChartPeriod === 'week') {
-                // Leggi input type="week"
                 const weekInput = document.getElementById('input-stats-week');
-                let targetDate = new Date(); // Default today
-                
                 if(weekInput.value) {
-                    // Format "2023-W10"
-                    const [y, w] = weekInput.value.split('-W');
-                    // Approx logic to find start of that week
-                    const simpleDate = new Date(y, 0, 1 + (w - 1) * 7);
-                    // Adjust to Monday
-                    const day = simpleDate.getDay();
-                    const diff = simpleDate.getDate() - day + (day == 0 ? -6:1); 
-                    targetDate = new Date(simpleDate.setDate(diff));
-                } else {
-                     // Imposta valore default nell'input se vuoto
-                     // (Omettiamo complessità per semplicità, usiamo logica "ultima settimana")
-                }
-
-                // Generiamo 7 giorni basati sulla data target (o oggi)
-                // Se input vuoto, usiamo "oggi" e andiamo indietro 7gg (comportamento legacy)
-                // Se input pieno, usiamo quella settimana lun-dom
-                
-                if(weekInput.value) {
-                    // Logic for specific ISO week is tricky in JS without libraries.
-                    // Fallback visual simple: Filter logs that startWith specific ISO string prefix? No.
-                    // Let's rely on calculating week number for every log.
                     const [selYear, selWeek] = weekInput.value.split('-W').map(Number);
-                    filteredLogs = logs.filter(l => {
-                        const d = new Date(l.date);
-                        return d.getFullYear() === selYear && getWeekNumber(d) === selWeek;
-                    });
-
-                    // Labels: Lun-Dom of that week
-                    labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-                    data = new Array(7).fill(0);
-                    
-                    filteredLogs.forEach(l => {
-                         const d = new Date(l.date);
-                         const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Mon
-                         data[dayIdx]++;
-                    });
+                    filteredLogs = logs.filter(l => { const d = new Date(l.date); return d.getFullYear() === selYear && getWeekNumber(d) === selWeek; });
+                    labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']; data = new Array(7).fill(0);
+                    filteredLogs.forEach(l => { const d = new Date(l.date); const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1; data[dayIdx]++; });
                 } else {
-                    // Default behavior (Last 7 days) if input not used yet
                     const now = new Date();
                     for(let i=6; i>=0; i--) {
-                        const d = new Date();
-                        d.setDate(now.getDate() - i);
-                        const dateStr = d.toISOString().split('T')[0];
+                        const d = new Date(); d.setDate(now.getDate() - i); const dateStr = d.toISOString().split('T')[0];
                         labels.push(d.toLocaleDateString('it-IT', {weekday: 'short'}));
                         const count = logs.filter(l => l.date === dateStr).length;
-                        data.push(count);
-                        if(count > 0) filteredLogs.push(...logs.filter(l => l.date === dateStr));
+                        data.push(count); if(count > 0) filteredLogs.push(...logs.filter(l => l.date === dateStr));
                     }
                 }
-
             } else if (currentChartPeriod === 'month') {
-                const monthInput = document.getElementById('input-stats-month').value; // YYYY-MM
+                const monthInput = document.getElementById('input-stats-month').value; 
                 if(monthInput) {
                     filteredLogs = logs.filter(l => l.date.startsWith(monthInput));
-                    const [y, m] = monthInput.split('-');
-                    const daysInMonth = new Date(y, m, 0).getDate();
-                    
-                    labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
-                    data = new Array(daysInMonth).fill(0);
-
-                    filteredLogs.forEach(l => {
-                        const day = parseInt(l.date.split('-')[2]);
-                        data[day-1]++;
-                    });
+                    const [y, m] = monthInput.split('-'); const daysInMonth = new Date(y, m, 0).getDate();
+                    labels = Array.from({length: daysInMonth}, (_, i) => i + 1); data = new Array(daysInMonth).fill(0);
+                    filteredLogs.forEach(l => { const day = parseInt(l.date.split('-')[2]); data[day-1]++; });
                 }
-
             } else if (currentChartPeriod === 'year') {
-                const yearInput = document.getElementById('input-stats-year').value; // YYYY
+                const yearInput = document.getElementById('input-stats-year').value;
                 if(yearInput) {
                     filteredLogs = logs.filter(l => l.date.startsWith(yearInput));
-                    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-                    labels = months;
-                    data = new Array(12).fill(0);
-                    
-                    filteredLogs.forEach(l => {
-                        const m = parseInt(l.date.split('-')[1]) - 1; 
-                        data[m]++;
-                    });
+                    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']; labels = months; data = new Array(12).fill(0);
+                    filteredLogs.forEach(l => { const m = parseInt(l.date.split('-')[1]) - 1; data[m]++; });
                 }
             }
-
             renderChart(labels, data);
             calculateAndRenderStatsBlocks(filteredLogs);
-            calculateTrends(logs); // Passiamo TUTTI i log (filtrati solo per gallina)
+            calculateTrends(logs);
         };
 
         function calculateAndRenderStatsBlocks(filteredLogs) {
-            // 1. Totale Periodo
             const total = filteredLogs.length;
             document.getElementById('chart-stat-total').innerText = total;
-
-            // 2. Giorni nel periodo (per calcolare medie)
             let daysInPeriod = 1;
             if(currentChartPeriod === 'week') daysInPeriod = 7;
-            else if(currentChartPeriod === 'month') {
-                 const m = document.getElementById('input-stats-month').value;
-                 if(m) {
-                    const [y, month] = m.split('-');
-                    daysInPeriod = new Date(y, month, 0).getDate();
-                 } else daysInPeriod = 30;
-            } else if(currentChartPeriod === 'year') {
-                 const y = document.getElementById('input-stats-year').value;
-                 daysInPeriod = ((y % 4 === 0 && y % 100 > 0) || y % 400 == 0) ? 366 : 365;
-            }
-
-            // 3. Media Giornaliera
-            const avgDay = (total / daysInPeriod).toFixed(1);
-            document.getElementById('chart-stat-avg-day').innerText = avgDay;
-
-            // 4. Media Settimanale (Total / (Days/7))
-            const weeksInPeriod = daysInPeriod / 7;
-            const avgWeek = (total / weeksInPeriod).toFixed(1);
-            document.getElementById('chart-stat-avg-week').innerText = avgWeek;
-
-            // 5. Media Mensile (Total / (Days/30.44))
-            const monthsInPeriod = daysInPeriod / 30.44;
-            // Se periodo è settimana, media mensile è proiezione (x4.3)
-            // Se periodo è anno, è reale
-            const avgMonth = (total / Math.max(1, monthsInPeriod)).toFixed(1);
-            document.getElementById('chart-stat-avg-month').innerText = avgMonth;
+            else if(currentChartPeriod === 'month') { const m = document.getElementById('input-stats-month').value; if(m) { const [y, month] = m.split('-'); daysInPeriod = new Date(y, month, 0).getDate(); } else daysInPeriod = 30; }
+            else if(currentChartPeriod === 'year') { const y = document.getElementById('input-stats-year').value; daysInPeriod = ((y % 4 === 0 && y % 100 > 0) || y % 400 == 0) ? 366 : 365; }
+            
+            document.getElementById('chart-stat-avg-day').innerText = (total / daysInPeriod).toFixed(1);
+            document.getElementById('chart-stat-avg-week').innerText = (total / (daysInPeriod / 7)).toFixed(1);
+            document.getElementById('chart-stat-avg-month').innerText = (total / Math.max(1, daysInPeriod / 30.44)).toFixed(1);
         }
 
         function calculateTrends(logs) {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-            
-            // Helper date objects
             const last7Start = new Date(); last7Start.setDate(now.getDate() - 7);
             const prev7Start = new Date(); prev7Start.setDate(now.getDate() - 14);
             const last30Start = new Date(); last30Start.setDate(now.getDate() - 30);
             const prev30Start = new Date(); prev30Start.setDate(now.getDate() - 60);
+            const isBetween = (dStr, start, end) => { const d = new Date(dStr); return d >= start && d <= end; };
 
-            // Helpers filters
-            const isBetween = (dStr, start, end) => {
-                const d = new Date(dStr);
-                return d >= start && d <= end;
-            };
-
-            // Counts
             const last7 = logs.filter(l => isBetween(l.date, last7Start, now)).length;
             const prev7 = logs.filter(l => isBetween(l.date, prev7Start, last7Start)).length;
             const last30 = logs.filter(l => isBetween(l.date, last30Start, now)).length;
             const prev30 = logs.filter(l => isBetween(l.date, prev30Start, last30Start)).length;
 
-            // Deltas
-            const delta7 = last7 - prev7;
-            const delta30 = last30 - prev30;
-
-            // Days Since Last
+            const delta7 = last7 - prev7; const delta30 = last30 - prev30;
             let daysSince = "-";
             if(logs.length > 0) {
-                // Find latest date in logs
                 const dates = logs.map(l => new Date(l.date));
                 const maxDate = new Date(Math.max.apply(null, dates));
-                const diff = Math.floor((now - maxDate) / (1000 * 60 * 60 * 24));
-                daysSince = diff + " Giorni fa";
-                if(diff === 0) daysSince = "Oggi";
-                if(diff === 1) daysSince = "Ieri";
+                const diff = Math.floor((now - maxDate) / (86400000));
+                daysSince = diff + " Giorni fa"; if(diff === 0) daysSince = "Oggi"; if(diff === 1) daysSince = "Ieri";
             }
 
-            // Render
             document.getElementById('trend-7d-val').innerText = last7;
-            const elDelta7 = document.getElementById('trend-7d-delta');
-            elDelta7.innerText = (delta7 > 0 ? "+" : "") + delta7;
-            elDelta7.className = `text-lg font-bold ${delta7 >= 0 ? 'text-green-600' : 'text-red-500'}`;
-
+            const elDelta7 = document.getElementById('trend-7d-delta'); elDelta7.innerText = (delta7 > 0 ? "+" : "") + delta7; elDelta7.className = `text-lg font-bold ${delta7 >= 0 ? 'text-green-600' : 'text-red-500'}`;
             document.getElementById('trend-30d-val').innerText = last30;
-            const elDelta30 = document.getElementById('trend-30d-delta');
-            elDelta30.innerText = (delta30 > 0 ? "+" : "") + delta30;
-            elDelta30.className = `text-lg font-bold ${delta30 >= 0 ? 'text-green-600' : 'text-red-500'}`;
-
+            const elDelta30 = document.getElementById('trend-30d-delta'); elDelta30.innerText = (delta30 > 0 ? "+" : "") + delta30; elDelta30.className = `text-lg font-bold ${delta30 >= 0 ? 'text-green-600' : 'text-red-500'}`;
             document.getElementById('trend-days-since').innerText = daysSince;
         }
 
         function renderChart(labels, data) {
             const ctx = document.getElementById('eggsChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-
             chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Uova',
-                        data: data,
-                        backgroundColor: '#f59e0b',
-                        borderRadius: 4,
-                        barThickness: currentChartPeriod === 'month' ? 6 : 12
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-                    },
-                    animation: { duration: 300 }
-                }
+                type: 'bar', data: { labels: labels, datasets: [{ label: 'Uova', data: data, backgroundColor: '#f59e0b', borderRadius: 4, barThickness: currentChartPeriod === 'month' ? 6 : 12 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } }, animation: { duration: 300 } }
             });
         }
-
     </script>
 </body>
 </html>
