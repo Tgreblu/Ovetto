@@ -107,7 +107,7 @@
             
             <!-- Versione App -->
             <div class="text-center mt-10 mb-4">
-                <p class="text-[10px] text-gray-400">App v1.7</p>
+                <p class="text-[10px] text-gray-400">App v1.8</p>
             </div>
         </section>
 
@@ -594,8 +594,8 @@
                              <button onclick="event.stopPropagation(); openEditCoop('${docSnap.id}', '${coop.name.replace(/'/g, "\\'")}')" class="bg-gray-100 text-gray-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-gray-200">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-2 rounded-full w-10 h-10 flex items-center justify-center shadow-sm hover:bg-yellow-200">
-                                <i class="fa-solid fa-egg"></i>
+                            <button onclick="event.stopPropagation(); openEggModal('${docSnap.id}')" class="bg-yellow-100 text-yellow-600 p-4 rounded-full w-20 h-20 flex items-center justify-center shadow-sm hover:bg-yellow-200">
+                                <i class="fa-solid fa-egg text-2xl"></i>
                             </button>
                         </div>
                     `;
@@ -683,6 +683,7 @@
                 const personalEggs = productionCache.filter(p => p.chickenId === c.id && new Date(p.date) >= startOfYear).length;
 
                 const cString = encodeURIComponent(JSON.stringify(c));
+                const icon = c.sex === 'M' ? '🐓' : '🐔';
 
                 const el = document.createElement('div');
                 el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group active:bg-gray-50 cursor-pointer';
@@ -690,7 +691,7 @@
                     <div onclick="openChickenForm('view', JSON.parse(decodeURIComponent('${cString}')))" class="flex items-center gap-3">
                         <div class="absolute left-0 top-0 bottom-0 w-2" style="background-color: ${c.eggColor}"></div>
                         <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl border-2 border-white shadow-sm">
-                            🐔
+                            ${icon}
                         </div>
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
