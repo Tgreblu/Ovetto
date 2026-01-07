@@ -107,7 +107,7 @@
             
             <!-- Versione App -->
             <div class="text-center mt-10 mb-4">
-                <p class="text-[10px] text-gray-400">App v1.5</p>
+                <p class="text-[10px] text-gray-400">App v1.6</p>
             </div>
         </section>
 
@@ -118,7 +118,7 @@
             </button>
             
             <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4 mb-2">
-                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🏠</div>
+                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-3xl border border-gray-300">🏠</div>
                 <div>
                     <h2 class="text-xl font-bold" id="detail-coop-name">Nome Pollaio</h2>
                     <p class="text-sm text-gray-500" id="detail-coop-members">Caricamento...</p>
@@ -138,28 +138,66 @@
                 </div>
             </div>
 
-            <!-- TAB: STATISTICHE -->
+            <!-- TAB: STATISTICHE AVANZATE -->
             <div id="content-stats" class="hidden space-y-6">
                 <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <h4 class="font-bold text-gray-700 mb-2">Produzione Uova</h4>
+                    <h4 class="font-bold text-gray-700 mb-2">Analisi Produzione</h4>
                     
                     <!-- Filtro Gallina -->
                     <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Soggetto</label>
                         <select id="stats-filter-chicken" onchange="updateChartFromCache()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
                             <option value="all">Tutto il Pollaio</option>
                             <!-- Options popolate via JS -->
                         </select>
                     </div>
 
-                    <div class="flex justify-center space-x-2 mb-4">
-                        <button onclick="setChartPeriod('week')" id="btn-period-week" class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 ring-2 ring-yellow-300 font-bold">Settimana</button>
-                        <button onclick="setChartPeriod('month')" id="btn-period-month" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Mese</button>
-                        <button onclick="setChartPeriod('year')" id="btn-period-year" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">Anno</button>
+                    <!-- Selezione Periodo -->
+                    <div class="flex flex-col gap-3 mb-4">
+                         <label class="block text-xs font-bold text-gray-400 uppercase">Periodo Temporale</label>
+                        <div class="flex justify-center space-x-2">
+                            <button onclick="setChartPeriod('week')" id="btn-period-week" class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 ring-2 ring-yellow-300 font-bold transition-all">Settimana</button>
+                            <button onclick="setChartPeriod('month')" id="btn-period-month" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-all">Mese</button>
+                            <button onclick="setChartPeriod('year')" id="btn-period-year" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-all">Anno</button>
+                        </div>
+                        
+                        <!-- Input dinamici per data -->
+                        <div class="mt-1">
+                            <input type="week" id="input-stats-week" onchange="updateChartFromCache()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 hidden">
+                            <input type="month" id="input-stats-month" onchange="updateChartFromCache()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 hidden">
+                            <select id="input-stats-year" onchange="updateChartFromCache()" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 hidden">
+                                <!-- Popolato via JS -->
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="relative h-64 w-full">
+                    <!-- Grafico -->
+                    <div class="relative h-64 w-full mb-6">
                         <canvas id="eggsChart"></canvas>
                     </div>
+
+                    <!-- Blocchi Statistiche Aggiuntivi -->
+                    <div class="grid grid-cols-2 gap-3 mb-2">
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Totale Periodo</span>
+                            <span class="text-2xl font-bold text-yellow-600" id="chart-stat-total">-</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Media Giornaliera</span>
+                            <span class="text-xl font-bold text-gray-700" id="chart-stat-avg-day">-</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Media Settimanale</span>
+                            <span class="text-lg font-bold text-gray-800" id="chart-stat-avg-week">-</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm text-center">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase block">Media Mensile</span>
+                            <span class="text-lg font-bold text-gray-800" id="chart-stat-avg-month">-</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -240,16 +278,14 @@
                     </label>
                 </div>
 
-                <!-- NUOVA SEZIONE: STATISTICHE DETTAGLIATE (Solo lettura) -->
+                <!-- STATISTICHE DETTAGLIATE GALLINA (Solo lettura) -->
                 <div id="chk-stats-block" class="hidden mt-6 space-y-4">
                     <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">Report Produzione</h3>
                     
                     <!-- Settimana Corrente Visuale -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                         <p class="text-xs text-gray-500 font-bold uppercase mb-3">Settimana Corrente</p>
-                        <div class="flex justify-between items-center" id="stat-current-week-visual">
-                            <!-- Generato via JS: Cerchietti L M M G V S D -->
-                        </div>
+                        <div class="flex justify-between items-center" id="stat-current-week-visual"></div>
                     </div>
 
                     <!-- Griglia Metriche -->
@@ -433,7 +469,6 @@
                 fab.onclick = () => showView('addCoop');
             } else if (viewName === 'coopDetail') {
                 fab.classList.remove('hidden');
-                // Il FAB apre il form in modalità 'create'
                 fab.onclick = () => openChickenForm('create');
             } else {
                 fab.classList.add('hidden');
@@ -506,7 +541,7 @@
                     el.className = 'bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center active:bg-gray-50 transition-colors cursor-pointer';
                     el.innerHTML = `
                         <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-lg bg-cover bg-center bg-gray-200 border border-gray-300" style="background-image: url('https://img.icons8.com/color/96/chicken-coop.png')"></div>
+                            <div class="w-16 h-16 rounded-lg bg-gray-200 border border-gray-300 flex items-center justify-center text-3xl">🏠</div>
                             <div>
                                 <h3 class="font-bold text-lg">${coop.name}</h3>
                                 <p class="text-sm text-gray-500">${memberCount} Galline</p>
@@ -580,6 +615,21 @@
                 selectFilter.appendChild(opt);
             });
 
+            // Popola anche il selettore anni nelle statistiche
+            const yearSelect = document.getElementById('input-stats-year');
+            yearSelect.innerHTML = '';
+            const years = [...new Set(productionCache.map(p => p.date.split('-')[0]))].sort().reverse();
+            const currentYear = new Date().getFullYear().toString();
+            if(!years.includes(currentYear)) years.unshift(currentYear);
+            
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.innerText = y;
+                yearSelect.appendChild(opt);
+            });
+
+
             chickensListEl.innerHTML = '';
             const startOfYear = new Date(new Date().getFullYear(), 0, 1);
 
@@ -593,7 +643,6 @@
 
                 const personalEggs = productionCache.filter(p => p.chickenId === c.id && new Date(p.date) >= startOfYear).length;
 
-                // Stringify per passare l'oggetto al click
                 const cString = encodeURIComponent(JSON.stringify(c));
 
                 const el = document.createElement('div');
@@ -617,13 +666,17 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Matita Modifica -->
                     <button onclick="event.stopPropagation(); openChickenForm('edit', JSON.parse(decodeURIComponent('${cString}')))" class="absolute top-2 right-2 bg-white text-yellow-600 p-2 rounded-full shadow-sm border border-gray-100 hover:bg-yellow-50 z-10">
                         <i class="fa-solid fa-pen text-sm"></i>
                     </button>
                 `;
                 chickensListEl.appendChild(el);
             });
+
+            // Set default date inputs
+            const today = new Date();
+            document.getElementById('input-stats-month').value = today.toISOString().slice(0, 7); // YYYY-MM
+            // Week input needs specialized format 'YYYY-Www', simplified here or keep default
 
             if(!document.getElementById('content-stats').classList.contains('hidden')) {
                 updateChartFromCache();
@@ -641,11 +694,9 @@
             const inputs = form.querySelectorAll('input, select');
             const chkActive = document.getElementById('input-chk-active');
 
-            // Reset Form
             form.reset();
             document.getElementById('input-chk-id').value = '';
             
-            // Abilita/Disabilita Inputs
             const isReadOnly = (mode === 'view');
             inputs.forEach(i => i.disabled = isReadOnly);
 
@@ -656,7 +707,6 @@
                 statsBlock.classList.add('hidden'); 
                 chkActive.checked = true; 
             } else {
-                // Edit o View: Popola dati
                 document.getElementById('input-chk-id').value = data.id;
                 document.getElementById('input-chk-name').value = data.name;
                 document.getElementById('input-chk-breed').value = data.breed || '';
@@ -677,21 +727,17 @@
                     btnDelete.classList.add('hidden');
                     statsBlock.classList.remove('hidden'); 
 
-                    // --- CALCOLO STATISTICHE AVANZATE ---
                     if(productionCache && data.id) {
                         const now = new Date();
                         const startOfYear = new Date(now.getFullYear(), 0, 1);
                         
-                        // Filtra log della gallina e ordina per data
                         const myLogs = productionCache
                             .filter(p => p.chickenId === data.id)
                             .sort((a,b) => new Date(a.date) - new Date(b.date));
                         
-                        // 1. Totale Anno
                         const countYear = myLogs.filter(l => new Date(l.date) >= startOfYear).length;
                         document.getElementById('stat-total-year').innerText = countYear;
 
-                        // 2. Primo e Ultimo Uovo
                         let firstEgg = "-";
                         let lastEgg = "-";
                         let daysSince = "-";
@@ -700,8 +746,6 @@
                             firstEgg = new Date(myLogs[0].date).toLocaleDateString('it-IT');
                             const lastDateObj = new Date(myLogs[myLogs.length - 1].date);
                             lastEgg = lastDateObj.toLocaleDateString('it-IT');
-                            
-                            // Giorni dall'ultimo uovo
                             const diffTime = Math.abs(now - lastDateObj);
                             daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                         }
@@ -710,13 +754,11 @@
                         document.getElementById('stat-last-egg').innerText = lastEgg;
                         document.getElementById('stat-days-since').innerText = daysSince !== "-" ? daysSince : "N/A";
 
-                        // 3. Serie (Streaks)
                         let currentStreak = 0;
                         let maxStreak = 0;
                         let tempStreak = 0;
                         
                         if(myLogs.length > 0) {
-                            // Uniamo le date uniche ordinate
                             const uniqueDates = [...new Set(myLogs.map(l => l.date))];
                             
                             for(let i=0; i<uniqueDates.length; i++) {
@@ -737,13 +779,11 @@
                             }
                             if(tempStreak > maxStreak) maxStreak = tempStreak;
 
-                            // Current Streak: Contiamo a ritroso dall'ultima data se è oggi o ieri
                             const lastLogDate = new Date(uniqueDates[uniqueDates.length - 1]);
                             const diffFromToday = Math.floor((now - lastLogDate) / (1000 * 60 * 60 * 24));
                             
-                            // Se l'ultimo uovo è stato oggi o ieri, la streak è attiva
                             if(diffFromToday <= 1) {
-                                currentStreak = 1; // partiamo dall'ultimo
+                                currentStreak = 1;
                                 for(let i = uniqueDates.length - 2; i >= 0; i--) {
                                     const prev = new Date(uniqueDates[i+1]);
                                     const curr = new Date(uniqueDates[i]);
@@ -759,7 +799,6 @@
                         document.getElementById('stat-streak-current').innerText = currentStreak;
                         document.getElementById('stat-streak-record').innerText = maxStreak;
 
-                        // 4. Medie
                         let avgWeek = "0.0";
                         let avgMonth = "0.0";
                         if(myLogs.length > 1) {
@@ -773,13 +812,11 @@
                         document.getElementById('stat-avg-week').innerText = avgWeek;
                         document.getElementById('stat-avg-month').innerText = avgMonth;
 
-                        // 5. Visualizzazione Settimana Corrente
                         const visualContainer = document.getElementById('stat-current-week-visual');
                         visualContainer.innerHTML = '';
                         
-                        // Calcola inizio settimana (Lunedì)
                         const startOfWeek = new Date(now);
-                        const day = startOfWeek.getDay() || 7; // Dom=0 -> 7
+                        const day = startOfWeek.getDay() || 7; 
                         if(day !== 1) startOfWeek.setHours(-24 * (day - 1));
                         
                         const daysLabels = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
@@ -836,16 +873,13 @@
                 birthDate: document.getElementById('input-chk-birth').value,
                 eggColor: document.getElementById('input-chk-eggcolor').value,
                 isActive: document.getElementById('input-chk-active').checked,
-                // Se è un update, non tocchiamo createdAt, se è nuovo lo aggiungiamo
                 updatedAt: Timestamp.now()
             };
 
             try {
                 if(chkId) {
-                    // UPDATE
                     await updateDoc(doc(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens/${chkId}`), chickenData);
                 } else {
-                    // CREATE
                     chickenData.createdAt = Timestamp.now();
                     await addDoc(collection(db, `users/${currentUser.uid}/coops/${currentCoopId}/chickens`), chickenData);
                 }
@@ -951,16 +985,33 @@
             currentChartPeriod = period;
             ['week', 'month', 'year'].forEach(p => {
                 const btn = document.getElementById(`btn-period-${p}`);
+                const input = document.getElementById(`input-stats-${p}`);
+                
                 if(p === period) {
+                    // Activate Button
                     btn.classList.remove('bg-gray-100', 'text-gray-600');
                     btn.classList.add('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
+                    // Show Input
+                    input.classList.remove('hidden');
                 } else {
+                    // Deactivate Button
                     btn.classList.add('bg-gray-100', 'text-gray-600');
                     btn.classList.remove('bg-yellow-100', 'text-yellow-700', 'ring-2', 'ring-yellow-300', 'font-bold');
+                    // Hide Input
+                    input.classList.add('hidden');
                 }
             });
             updateChartFromCache();
         };
+
+        // Helper: Get ISO Week
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+            return weekNo;
+        }
 
         window.updateChartFromCache = () => {
             if(!productionCache) return;
@@ -968,44 +1019,142 @@
             const selectedChicken = document.getElementById('stats-filter-chicken').value;
             let logs = productionCache;
             
+            // 1. Filtro Gallina
             if(selectedChicken !== 'all') {
                 logs = logs.filter(l => l.chickenId === selectedChicken);
             }
 
+            // 2. Filtro Periodo (Date)
             let labels = [];
             let data = [];
-            const now = new Date();
-
+            let filteredLogs = [];
+            
             if (currentChartPeriod === 'week') {
-                for(let i=6; i>=0; i--) {
-                    const d = new Date();
-                    d.setDate(now.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0];
-                    labels.push(d.toLocaleDateString('it-IT', {weekday: 'short'}));
-                    data.push(logs.filter(l => l.date === dateStr).length);
+                // Leggi input type="week"
+                const weekInput = document.getElementById('input-stats-week');
+                let targetDate = new Date(); // Default today
+                
+                if(weekInput.value) {
+                    // Format "2023-W10"
+                    const [y, w] = weekInput.value.split('-W');
+                    // Approx logic to find start of that week
+                    const simpleDate = new Date(y, 0, 1 + (w - 1) * 7);
+                    // Adjust to Monday
+                    const day = simpleDate.getDay();
+                    const diff = simpleDate.getDate() - day + (day == 0 ? -6:1); 
+                    targetDate = new Date(simpleDate.setDate(diff));
+                } else {
+                     // Imposta valore default nell'input se vuoto
+                     // (Omettiamo complessità per semplicità, usiamo logica "ultima settimana")
                 }
-            } else if (currentChartPeriod === 'month') {
-                 for(let i=14; i>=0; i--) {
-                    const d = new Date();
-                    d.setDate(now.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0];
-                    labels.push(d.getDate());
-                    data.push(logs.filter(l => l.date === dateStr).length);
-                }
-            } else if (currentChartPeriod === 'year') {
-                const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-                labels = months;
-                data = new Array(12).fill(0);
-                logs.forEach(l => {
-                    const m = parseInt(l.date.split('-')[1]) - 1; 
-                    if(l.date.startsWith(now.getFullYear())) {
-                        data[m]++;
+
+                // Generiamo 7 giorni basati sulla data target (o oggi)
+                // Se input vuoto, usiamo "oggi" e andiamo indietro 7gg (comportamento legacy)
+                // Se input pieno, usiamo quella settimana lun-dom
+                
+                if(weekInput.value) {
+                    // Logic for specific ISO week is tricky in JS without libraries.
+                    // Fallback visual simple: Filter logs that startWith specific ISO string prefix? No.
+                    // Let's rely on calculating week number for every log.
+                    const [selYear, selWeek] = weekInput.value.split('-W').map(Number);
+                    filteredLogs = logs.filter(l => {
+                        const d = new Date(l.date);
+                        return d.getFullYear() === selYear && getWeekNumber(d) === selWeek;
+                    });
+
+                    // Labels: Lun-Dom of that week
+                    labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+                    data = new Array(7).fill(0);
+                    
+                    filteredLogs.forEach(l => {
+                         const d = new Date(l.date);
+                         const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Mon
+                         data[dayIdx]++;
+                    });
+                } else {
+                    // Default behavior (Last 7 days) if input not used yet
+                    const now = new Date();
+                    for(let i=6; i>=0; i--) {
+                        const d = new Date();
+                        d.setDate(now.getDate() - i);
+                        const dateStr = d.toISOString().split('T')[0];
+                        labels.push(d.toLocaleDateString('it-IT', {weekday: 'short'}));
+                        const count = logs.filter(l => l.date === dateStr).length;
+                        data.push(count);
+                        if(count > 0) filteredLogs.push(...logs.filter(l => l.date === dateStr));
                     }
-                });
+                }
+
+            } else if (currentChartPeriod === 'month') {
+                const monthInput = document.getElementById('input-stats-month').value; // YYYY-MM
+                if(monthInput) {
+                    filteredLogs = logs.filter(l => l.date.startsWith(monthInput));
+                    const [y, m] = monthInput.split('-');
+                    const daysInMonth = new Date(y, m, 0).getDate();
+                    
+                    labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+                    data = new Array(daysInMonth).fill(0);
+
+                    filteredLogs.forEach(l => {
+                        const day = parseInt(l.date.split('-')[2]);
+                        data[day-1]++;
+                    });
+                }
+
+            } else if (currentChartPeriod === 'year') {
+                const yearInput = document.getElementById('input-stats-year').value; // YYYY
+                if(yearInput) {
+                    filteredLogs = logs.filter(l => l.date.startsWith(yearInput));
+                    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                    labels = months;
+                    data = new Array(12).fill(0);
+                    
+                    filteredLogs.forEach(l => {
+                        const m = parseInt(l.date.split('-')[1]) - 1; 
+                        data[m]++;
+                    });
+                }
             }
 
             renderChart(labels, data);
+            calculateAndRenderStatsBlocks(filteredLogs);
         };
+
+        function calculateAndRenderStatsBlocks(filteredLogs) {
+            // 1. Totale Periodo
+            const total = filteredLogs.length;
+            document.getElementById('chart-stat-total').innerText = total;
+
+            // 2. Giorni nel periodo (per calcolare medie)
+            let daysInPeriod = 1;
+            if(currentChartPeriod === 'week') daysInPeriod = 7;
+            else if(currentChartPeriod === 'month') {
+                 const m = document.getElementById('input-stats-month').value;
+                 if(m) {
+                    const [y, month] = m.split('-');
+                    daysInPeriod = new Date(y, month, 0).getDate();
+                 } else daysInPeriod = 30;
+            } else if(currentChartPeriod === 'year') {
+                 const y = document.getElementById('input-stats-year').value;
+                 daysInPeriod = ((y % 4 === 0 && y % 100 > 0) || y % 400 == 0) ? 366 : 365;
+            }
+
+            // 3. Media Giornaliera
+            const avgDay = (total / daysInPeriod).toFixed(1);
+            document.getElementById('chart-stat-avg-day').innerText = avgDay;
+
+            // 4. Media Settimanale (Total / (Days/7))
+            const weeksInPeriod = daysInPeriod / 7;
+            const avgWeek = (total / weeksInPeriod).toFixed(1);
+            document.getElementById('chart-stat-avg-week').innerText = avgWeek;
+
+            // 5. Media Mensile (Total / (Days/30.44))
+            const monthsInPeriod = daysInPeriod / 30.44;
+            // Se periodo è settimana, media mensile è proiezione (x4.3)
+            // Se periodo è anno, è reale
+            const avgMonth = (total / Math.max(1, monthsInPeriod)).toFixed(1);
+            document.getElementById('chart-stat-avg-month').innerText = avgMonth;
+        }
 
         function renderChart(labels, data) {
             const ctx = document.getElementById('eggsChart').getContext('2d');
@@ -1020,7 +1169,7 @@
                         data: data,
                         backgroundColor: '#f59e0b',
                         borderRadius: 4,
-                        barThickness: currentChartPeriod === 'month' ? 10 : 20
+                        barThickness: currentChartPeriod === 'month' ? 6 : 12
                     }]
                 },
                 options: {
@@ -1029,9 +1178,9 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { grid: { display: false } }
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
                     },
-                    animation: { duration: 500 }
+                    animation: { duration: 300 }
                 }
             });
         }
